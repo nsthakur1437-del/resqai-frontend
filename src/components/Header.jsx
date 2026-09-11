@@ -47,7 +47,7 @@ export const Header = () => {
   });
 
   return (
-    <header className="sticky top-0 z-30 h-20 bg-[#080e1d]/90 backdrop-blur-xl border-b border-[#1c315e]/50 px-6 flex items-center justify-between">
+    <header className="sticky top-0 z-30 h-20 bg-white/75 backdrop-blur-xl border-b border-slate-200/80 px-6 flex items-center justify-between">
       {/* Left: Clean Professional Title & Subtitle */}
       <div className="flex flex-col">
         <h1 className="text-xl font-extrabold text-white tracking-tight uppercase">

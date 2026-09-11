@@ -102,7 +102,7 @@ export const Dashboard = () => {
               <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500 via-teal-500 to-blue-600 text-black shadow-lg shadow-cyan-500/20">
                 <Cpu className="w-6 h-6" />
               </div>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-100 to-cyan-300">
+              <span className="text-slate-900">
                 AI DISASTER COMMAND CENTER
               </span>
             </h1>
@@ -112,7 +112,7 @@ export const Dashboard = () => {
             </span>
           </div>
 
-          <p className="text-xs sm:text-sm text-cyan-200/90 mt-2 font-medium">
+          <p className="text-xs sm:text-sm text-slate-600 mt-2 font-medium">
             Unifying fragmented disaster information into one verified and prioritized response system.
           </p>
         </div>

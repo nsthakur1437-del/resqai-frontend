@@ -19,7 +19,8 @@ import {
   ExternalLink,
   GitMerge,
   LifeBuoy,
-  Send
+  Send,
+  Video
 } from 'lucide-react';
 import { useDisaster } from '../context/DisasterContext';
 import { soundFX } from '../utils/audio';
@@ -27,6 +28,8 @@ import { soundFX } from '../utils/audio';
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, badgeKey: null },
   { name: 'AI Incident Fusion', path: '/fusion', icon: GitMerge, badgeKey: 'fusion' },
+  { name: 'Live Monitoring', path: '/monitoring', icon: Video, badgeKey: 'live' },
+  { name: 'AI Vision', path: '/vision', icon: Eye, badgeKey: 'vision' },
   { name: 'Priority Queue', path: '/priority', icon: AlertTriangle, badgeKey: 'critical' },
   { name: 'Resource Matching', path: '/resource-matching', icon: LifeBuoy, badgeKey: 'matching' },
   { name: 'Dispatch Center', path: '/dispatch', icon: Send, badgeKey: 'teams' },
@@ -34,7 +37,6 @@ const navItems = [
   { name: 'Incidents Directory', path: '/incidents', icon: Shield, badgeKey: null },
   { name: 'Live Command Map', path: '/map', icon: MapPin, badgeKey: null },
   { name: 'Resources', path: '/resources', icon: Building2, badgeKey: null },
-  { name: 'AI Vision', path: '/vision', icon: Eye, badgeKey: 'vision' },
   { name: 'Settings', path: '/settings', icon: Settings, badgeKey: null }
 ];
 
@@ -42,12 +44,12 @@ export const Sidebar = () => {
   const { stats, reports, rescueTeams } = useDisaster();
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-64 bg-[#080e1d]/95 backdrop-blur-xl border-r border-[#1c315e]/50 flex flex-col z-40 transition-all duration-300">
+    <aside className="fixed top-0 left-0 h-screen w-64 bg-white/80 backdrop-blur-xl border-r border-slate-200/80 flex flex-col z-40 transition-all duration-300">
       {/* Brand & Logo */}
       <div className="p-5 border-b border-[#1c315e]/50 flex flex-col gap-1 relative overflow-hidden">
         {/* Subtle background glow */}
-        <div className="absolute -top-10 -left-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 rounded-full blur-xl pointer-events-none" />
+        <div className="absolute -top-10 -left-10 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-24 h-24 bg-slate-100 rounded-full blur-xl pointer-events-none" />
 
         <div className="flex items-center gap-3 relative z-10">
           {/* Custom Futuristic Logo */}
@@ -56,14 +58,14 @@ export const Sidebar = () => {
             <Mountain className="w-3.5 h-3.5 text-cyan-200 absolute bottom-2 left-3 drop-shadow" />
             <span className="absolute -top-1 -right-1 flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500 ring-2 ring-[#080e1d]"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500 ring-2 ring-white"></span>
             </span>
           </div>
 
           <div>
             <div className="flex items-center gap-1.5">
-              <h1 className="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-100 to-cyan-400 font-display">
-                ResQ<span className="text-cyan-400">AI</span>
+              <h1 className="text-xl font-extrabold tracking-wider text-slate-900 font-display">
+                ResQ<span className="text-cyan-600">AI</span>
               </h1>
               <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                 v2.4
@@ -76,7 +78,7 @@ export const Sidebar = () => {
         </div>
 
         {/* AI Command badge */}
-        <div className="mt-3 py-1 px-2.5 rounded-lg bg-[#0d152a] border border-cyan-500/20 flex items-center justify-between text-[11px] text-slate-300">
+        <div className="mt-3 py-1 px-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-[11px] text-slate-600">
           <span className="flex items-center gap-1.5 font-mono text-[10px] text-cyan-300">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             AI COORDINATOR
@@ -125,6 +127,12 @@ export const Sidebar = () => {
                   {item.badgeKey === 'matching' && (
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                       98%
+                    </span>
+                  )}
+                  {item.badgeKey === 'live' && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" />
+                      REC
                     </span>
                   )}
                   {item.badgeKey === 'fusion' && (
@@ -176,8 +184,8 @@ export const Sidebar = () => {
       </nav>
 
       {/* Live System Status Widget */}
-      <div className="p-3 border-t border-[#1c315e]/50 bg-[#060b17]/80">
-        <div className="p-3 rounded-xl bg-[#0d152a] border border-[#1c315e]/40 flex flex-col gap-2 text-xs">
+      <div className="p-3 border-t border-slate-200 bg-slate-50">
+        <div className="p-3 rounded-xl bg-white border border-slate-200 flex flex-col gap-2 text-xs">
           <div className="flex items-center justify-between text-slate-300">
             <span className="flex items-center gap-1.5 text-[11px] text-slate-300">
               <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
@@ -187,11 +195,11 @@ export const Sidebar = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-400">
-            <div className="bg-[#080e1d] p-1.5 rounded border border-[#162547]">
+            <div className="bg-slate-50 p-1.5 rounded border border-slate-200">
               <span className="text-slate-500 block">AI Engine</span>
               <span className="text-cyan-300 font-semibold">ResQ-NLP 4.0</span>
             </div>
-            <div className="bg-[#080e1d] p-1.5 rounded border border-[#162547]">
+            <div className="bg-slate-50 p-1.5 rounded border border-slate-200">
               <span className="text-slate-500 block">Latency</span>
               <span className="text-emerald-300 font-semibold">18 ms</span>
             </div>

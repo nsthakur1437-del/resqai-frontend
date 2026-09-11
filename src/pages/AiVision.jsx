@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Eye,
@@ -14,576 +14,635 @@ import {
   Compass,
   ArrowRight,
   ShieldAlert,
+  ShieldCheck,
   Upload,
   Image as ImageIcon,
   Check,
   RefreshCw,
   Zap,
   Info,
-  Layers as LayersIcon
+  Video,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { useDisaster } from '../context/DisasterContext';
 import { soundFX } from '../utils/audio';
 
-// Sample scenarios matching exact prompt specifications
-const scenarios = [
-  {
-    id: 'flood',
-    title: '🌊 Flood Detection',
-    inputType: 'Satellite Image',
-    disaster: 'Flood',
-    affectedArea: '42%',
-    blockedRoads: 3,
-    buildings: 18,
-    risk: 'HIGH',
-    riskColor: 'text-red-400 bg-red-500/20 border-red-500/40',
-    insightText: 'Large-scale flooding detected near River Valley.',
-    maskColor: '#06b6d4',
-    maskLabel: 'AI-IDENTIFIED FLOODED AREA',
-    svgWaterPath: 'M-50,260 Q180,90 420,200 T900,140'
-  },
-  {
-    id: 'landslide',
-    title: '⛰️ Landslide Detection',
-    inputType: 'Drone Image',
-    disaster: 'Landslide',
-    affectedArea: '28%',
-    blockedRoads: 1,
-    buildings: 4,
-    risk: 'CRITICAL',
-    riskColor: 'text-red-400 bg-red-500/20 border-red-500/40',
-    insightText: 'Massive slope collapse blocking Mountain Road sector.',
-    maskColor: '#f97316',
-    maskLabel: 'AI-IDENTIFIED DEBRIS FLOW ZONE',
-    svgWaterPath: 'M100,0 Q300,200 450,450 T700,500'
-  },
-  {
-    id: 'storm',
-    title: '🌧️ Storm Damage',
-    inputType: 'Aerial Image',
-    disaster: 'Storm Damage',
-    affectedArea: '19%',
-    blockedRoads: 2,
-    buildings: 12,
-    risk: 'MODERATE',
-    riskColor: 'text-amber-400 bg-amber-500/20 border-amber-500/40',
-    insightText: 'High wind structural damage and roof displacement.',
-    maskColor: '#eab308',
-    maskLabel: 'AI-IDENTIFIED STRUCTURAL DAMAGE',
-    svgWaterPath: 'M0,150 Q250,300 500,180 T900,280'
-  }
-];
-
 export const AiVision = () => {
   const navigate = useNavigate();
-  const { addIncidentFromVision } = useDisaster();
+  const { addIncidentFromVision, addToast } = useDisaster();
 
-  const [selectedScenarioId, setSelectedScenarioId] = useState('flood');
+  // State for File & Preview
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  // State for Inference & Telemetry
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisStep, setAnalysisStep] = useState(0);
-  const [isAnalysisComplete, setIsAnalysisComplete] = useState(true);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
   const [isAddedToMap, setIsAddedToMap] = useState(false);
-  const [customUploadedFileName, setCustomUploadedFileName] = useState(null);
 
-  const activeScenario = scenarios.find((s) => s.id === selectedScenarioId) || scenarios[0];
+  // Backend Connection Health State
+  const [backendStatus, setBackendStatus] = useState('CHECKING'); // 'ONLINE' | 'OFFLINE' | 'CHECKING'
+  const [modelStatus, setModelStatus] = useState('CHECKING'); // 'ACTIVE' | 'UNAVAILABLE' | 'CHECKING'
 
-  // ANALYZE IMAGE INTERACTION
-  const handleAnalyzeImage = () => {
-    setIsAnalyzing(true);
-    setIsAnalysisComplete(false);
+  // Canvas ref for Bounding Box rendering
+  const imageElementRef = useRef(null);
+  const canvasOverlayRef = useRef(null);
+
+  const BACKEND_API = 'http://127.0.0.1:8000';
+
+  // -------------------------------------------------------------
+  // Backend Connection Check (/health)
+  // -------------------------------------------------------------
+  const checkConnection = useCallback(async () => {
+    try {
+      const response = await fetch(`${BACKEND_API}/health`, { method: 'GET' });
+      if (response.ok) {
+        const data = await response.json();
+        setBackendStatus('ONLINE');
+        setModelStatus(data.model === 'loaded' || data.model_status === 'ACTIVE' ? 'ACTIVE' : 'UNAVAILABLE');
+      } else {
+        setBackendStatus('OFFLINE');
+        setModelStatus('UNAVAILABLE');
+      }
+    } catch {
+      setBackendStatus('OFFLINE');
+      setModelStatus('UNAVAILABLE');
+    }
+  }, []);
+
+  useEffect(() => {
+    checkConnection();
+    const interval = setInterval(checkConnection, 4000);
+    return () => clearInterval(interval);
+  }, [checkConnection]);
+
+  // -------------------------------------------------------------
+  // File Selection & Drag & Drop Handling
+  // -------------------------------------------------------------
+  const handleFileSelect = (file) => {
+    if (!file) return;
+    setSelectedFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setImagePreviewUrl(objectUrl);
+    setAnalysisResult(null);
+    setErrorMessage(null);
     setIsAddedToMap(false);
-    setAnalysisStep(1);
-    soundFX.playEmergencyAlert();
-
-    setTimeout(() => setAnalysisStep(2), 500);
-    setTimeout(() => setAnalysisStep(3), 1000);
-    setTimeout(() => setAnalysisStep(4), 1400);
-
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      setIsAnalysisComplete(true);
-      soundFX.playAiChime();
-    }, 1800);
+    soundFX.playClick();
   };
 
-  // ADD TO MAP INTERACTION
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const clearSelection = () => {
+    setSelectedFile(null);
+    setImagePreviewUrl(null);
+    setAnalysisResult(null);
+    setErrorMessage(null);
+    setIsAddedToMap(false);
+  };
+
+  // -------------------------------------------------------------
+  // Draw Real Bounding Boxes on Overlay Canvas
+  // -------------------------------------------------------------
+  const renderBoundingBoxes = (detections, imgWidth, imgHeight) => {
+    const canvas = canvasOverlayRef.current;
+    const img = imageElementRef.current;
+    if (!canvas || !img) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = img.clientWidth;
+    canvas.height = img.clientHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!detections || detections.length === 0) return;
+
+    const scaleX = canvas.width / imgWidth;
+    const scaleY = canvas.height / imgHeight;
+
+    detections.forEach((det) => {
+      const { bbox, confidence, class: clsName } = det;
+      const x1 = bbox.x1 * scaleX;
+      const y1 = bbox.y1 * scaleY;
+      const x2 = bbox.x2 * scaleX;
+      const y2 = bbox.y2 * scaleY;
+      const w = x2 - x1;
+      const h = y2 - y1;
+
+      const isHighRisk = confidence >= 0.75;
+      const boxColor = isHighRisk ? '#ef4444' : '#f59e0b';
+
+      // Draw bounding box
+      ctx.strokeStyle = boxColor;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x1, y1, w, h);
+
+      // Semi-transparent fill
+      ctx.fillStyle = isHighRisk ? 'rgba(239, 68, 68, 0.25)' : 'rgba(245, 158, 11, 0.25)';
+      ctx.fillRect(x1, y1, w, h);
+
+      // Label Tag
+      const labelText = `${(clsName || 'LANDSLIDE').toUpperCase()} ${(confidence * 100).toFixed(1)}%`;
+      ctx.font = 'bold 12px monospace';
+      const textWidth = ctx.measureText(labelText).width;
+
+      const tagY = y1 >= 22 ? y1 - 22 : y1;
+      ctx.fillStyle = isHighRisk ? '#dc2626' : '#d97706';
+      ctx.fillRect(x1, tagY, textWidth + 12, 22);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(labelText, x1 + 6, tagY + 15);
+    });
+  };
+
+  // Re-render bounding boxes on window resize or when result changes
+  useEffect(() => {
+    if (analysisResult && analysisResult.detections && imageElementRef.current) {
+      const img = imageElementRef.current;
+      const w = analysisResult.image_size?.width || img.naturalWidth || 640;
+      const h = analysisResult.image_size?.height || img.naturalHeight || 480;
+      renderBoundingBoxes(analysisResult.detections, w, h);
+    }
+  }, [analysisResult]);
+
+  // -------------------------------------------------------------
+  // Analyze Image (POST /predict with FormData)
+  // -------------------------------------------------------------
+  const handleAnalyzeImage = async () => {
+    if (!selectedFile) {
+      addToast('No Image Selected', 'Please choose or drag an image to analyze.', 'info');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+    setErrorMessage(null);
+    setIsAddedToMap(false);
+    soundFX.playEmergencyAlert();
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const response = await fetch(`${BACKEND_API}/predict`, {
+        method: 'POST',
+        body: formData
+        // Content-Type is set automatically by the browser with boundary
+      });
+
+      if (!response.ok) {
+        let errDetail = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errData = await response.json();
+          if (errData.detail) errDetail = errData.detail;
+          else if (errData.error) errDetail = errData.error;
+        } catch {
+          // ignore
+        }
+        throw new Error(errDetail);
+      }
+
+      const data = await response.json();
+      setAnalysisResult(data);
+      soundFX.playAiChime();
+
+      if (data.total_detections > 0) {
+        addToast(
+          'Landslide Hazard Detected',
+          `YOLO11 identified ${data.total_detections} detection zone(s) with ${Math.round((data.max_confidence || 0) * 100)}% confidence.`,
+          'critical'
+        );
+      } else {
+        addToast('Analysis Complete', 'No landslide detected in uploaded image.', 'info');
+      }
+    } catch (err) {
+      console.error('Inference error:', err);
+      if (backendStatus === 'OFFLINE') {
+        setErrorMessage('Backend server is not connected. Please start the AI prediction server.');
+      } else {
+        setErrorMessage(`Model inference error: ${err.message}`);
+      }
+      addToast('Prediction Failed', 'Could not obtain real prediction from YOLO11 backend.', 'critical');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // -------------------------------------------------------------
+  // Add to Live Disaster Map
+  // -------------------------------------------------------------
   const handleAddToMap = () => {
+    if (!analysisResult) return;
     setIsAddedToMap(true);
+    const count = analysisResult.total_detections || 1;
     addIncidentFromVision({
-      zone: activeScenario.disaster + ' Impact Zone',
-      floodedArea: activeScenario.affectedArea,
-      blockedRoads: activeScenario.blockedRoads,
-      buildings: activeScenario.buildings
+      zone: `Upload: ${selectedFile?.name || 'Image'} Landslide Zone`,
+      floodedArea: analysisResult.risk_level === 'HIGH' ? '35% Slope Area' : '15% Slope Area',
+      blockedRoads: count,
+      buildings: count * 2
     });
     soundFX.playSuccess();
   };
 
-  const handleFileUpload = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setCustomUploadedFileName(e.target.files[0].name);
-      soundFX.playClick();
-    }
-  };
+  // Compute stats from real result
+  const isDetectionPresent = analysisResult && analysisResult.total_detections > 0;
+  const detectedClassName = analysisResult?.detections?.[0]?.class || (isDetectionPresent ? 'landslide' : 'None');
+  const confidencePercent = analysisResult ? Math.round((analysisResult.max_confidence || 0) * 100) : 0;
+  const numDetections = analysisResult ? analysisResult.total_detections : 0;
+  const riskLevel = analysisResult ? analysisResult.risk_level : 'LOW';
 
   return (
     <div className="space-y-7 pb-12 max-w-[1400px] mx-auto">
       {/* ================================================== */}
-      {/* 1. PAGE HEADER                                     */}
+      {/* 1. PAGE HEADER & CONNECTION INDICATORS              */}
       {/* ================================================== */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#1c315e]/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#1c315e]/70">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-              <Eye className="w-6 h-6 text-indigo-400" />
-              <span>AI Vision Analysis</span>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 via-cyan-500 to-teal-500 text-black shadow-lg shadow-cyan-500/20">
+                <Eye className="w-6 h-6" />
+              </div>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-100 to-cyan-300">
+                AI VISION ANALYSIS
+              </span>
             </h1>
 
-            {/* AI Vision Prototype Badge */}
-            <span className="text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
-              AI VISION PROTOTYPE
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+              YOLO11 best.pt
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            "AI-powered disaster assessment using satellite and drone imagery."
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Real YOLO11 landslide inference on aerial, UAV, and satellite imagery.
           </p>
         </div>
 
-        {/* Prototype Notice Pill */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono self-start sm:self-auto">
-          <Info className="w-3.5 h-3.5" />
-          <span>Demo AI analysis using simulated results</span>
+        {/* Live Backend & Model Connection Telemetry */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold ${
+            backendStatus === 'ONLINE' ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300' : 'bg-red-500/10 border-red-500/40 text-red-400'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${backendStatus === 'ONLINE' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+            <span>Backend: {backendStatus}</span>
+          </div>
+
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold ${
+            modelStatus === 'ACTIVE' ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300' : 'bg-slate-800 border-slate-700 text-slate-400'
+          }`}>
+            <Cpu className="w-3.5 h-3.5" />
+            <span>Model: {modelStatus}</span>
+          </div>
+
+          <button
+            onClick={() => navigate('/monitoring')}
+            className="py-1.5 px-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <Video className="w-3.5 h-3.5" />
+            <span>Live Camera</span>
+          </button>
         </div>
       </div>
 
       {/* ================================================== */}
-      {/* 2. THREE-STEP WORKFLOW CARDS (Step 1 -> 2 -> 3)    */}
-      {/* ================================================== */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* STEP 1: IMAGE INPUT */}
-        <div className="glass-panel p-4 rounded-2xl border-cyan-500/30 flex items-center gap-3 bg-[#081226]/80">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center justify-center font-bold text-sm">
-            01
-          </div>
-          <div>
-            <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
-              STEP 1
-            </span>
-            <strong className="text-white text-xs block">IMAGE INPUT</strong>
-            <span className="text-[10px] text-slate-400">Satellite & drone feed</span>
-          </div>
-        </div>
-
-        {/* STEP 2: AI ANALYSIS */}
-        <div className="glass-panel p-4 rounded-2xl border-indigo-500/30 flex items-center gap-3 bg-[#0c132e]/80">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center justify-center font-bold text-sm">
-            02
-          </div>
-          <div>
-            <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
-              STEP 2
-            </span>
-            <strong className="text-indigo-300 text-xs block">AI ANALYSIS</strong>
-            <span className="text-[10px] text-slate-400">Segmentation & detection</span>
-          </div>
-        </div>
-
-        {/* STEP 3: DISASTER INSIGHT */}
-        <div className="glass-panel p-4 rounded-2xl border-emerald-500/30 flex items-center gap-3 bg-[#081822]/80">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center justify-center font-bold text-sm">
-            03
-          </div>
-          <div>
-            <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
-              STEP 3
-            </span>
-            <strong className="text-emerald-300 text-xs block">DISASTER INSIGHT</strong>
-            <span className="text-[10px] text-slate-400">Add to Disaster Map</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ================================================== */}
-      {/* 3. STEP 1 & 2: IMAGE INPUT & AI PROCESSING         */}
+      {/* 2. IMAGE UPLOAD & INFERENCE CONTROL               */}
       {/* ================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* STEP 1: Upload & Scenario Selection (5 Cols) */}
+        {/* Upload Dropzone (5 Cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="glass-panel p-5 rounded-2xl border-[#1c315e]/80 shadow-xl space-y-4">
+          <div className="glass-panel p-5 rounded-3xl border-[#1c315e]/80 shadow-xl space-y-4 bg-[#080e1d]/90">
             <div>
               <h2 className="text-sm font-extrabold text-white tracking-tight">
                 Upload Disaster Image
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                "Upload a satellite, drone, or disaster image."
+                "Upload a satellite, drone, or disaster image for YOLO11 analysis."
               </p>
             </div>
 
-            {/* Drag and Drop Area */}
-            <label className="border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 rounded-2xl p-6 bg-[#080e1d] flex flex-col items-center justify-center text-center cursor-pointer transition-all group">
-              <input type="file" onChange={handleFileUpload} className="hidden" accept="image/*" />
-              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 group-hover:bg-cyan-500/20 text-cyan-300 flex items-center justify-center mb-2 transition-all">
-                <Upload className="w-6 h-6" />
-              </div>
-              <span className="text-xs font-bold text-white block">
-                {customUploadedFileName || 'Drop image here or browse'}
-              </span>
-              <span className="text-[10px] text-slate-400 mt-1 block">
-                Supports Sentinel GeoTIFF, JPG, PNG from UAVs
-              </span>
-              <span className="mt-3 px-3 py-1 rounded-lg bg-[#0d152a] text-cyan-300 text-[11px] font-bold border border-[#1c315e] group-hover:border-cyan-400">
-                [ CHOOSE IMAGE ]
-              </span>
-            </label>
+            {/* Drag and Drop Zone */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-2xl p-6 bg-[#060c18] flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                isDragOver ? 'border-cyan-400 bg-cyan-500/10 scale-99' : 'border-cyan-500/40 hover:border-cyan-400'
+              }`}
+            >
+              <input
+                type="file"
+                id="file-upload-input"
+                onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+                className="hidden"
+                accept="image/*"
+              />
+              <label htmlFor="file-upload-input" className="cursor-pointer w-full flex flex-col items-center">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-300 flex items-center justify-center mb-2 transition-all">
+                  <Upload className="w-6 h-6" />
+                </div>
+                <span className="text-xs font-bold text-white block">
+                  {selectedFile ? selectedFile.name : 'Click to upload or drag and drop image'}
+                </span>
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  Supports JPG, PNG, WEBP, TIFF (e.g. PIC 1.jpeg)
+                </span>
+                <span className="mt-3 px-3 py-1 rounded-lg bg-[#0d152a] text-cyan-300 text-[11px] font-bold border border-[#1c315e] hover:border-cyan-400">
+                  [ CHOOSE IMAGE ]
+                </span>
+              </label>
 
-            {/* Sample Image Options */}
-            <div>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-2">
-                OR SELECT SAMPLE SCENARIO:
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                {scenarios.map((sc) => {
-                  const isSelected = sc.id === selectedScenarioId;
-                  return (
-                    <button
-                      key={sc.id}
-                      onClick={() => {
-                        setSelectedScenarioId(sc.id);
-                        setCustomUploadedFileName(null);
-                        setIsAddedToMap(false);
-                        soundFX.playClick();
-                      }}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-cyan-500/20 border-cyan-400 ring-1 ring-cyan-500/50 shadow-md'
-                          : 'bg-[#080e1d] border-[#1c315e] text-slate-300 hover:text-white'
-                      }`}
-                    >
-                      <span className="text-xs font-bold block">{sc.title}</span>
-                      <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
-                        {sc.inputType}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              {selectedFile && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearSelection();
+                  }}
+                  className="mt-2 text-[10px] font-mono text-red-400 hover:text-red-300 flex items-center gap-1"
+                >
+                  <X className="w-3 h-3" /> Remove image
+                </button>
+              )}
             </div>
 
-            {/* ANALYZE BUTTON */}
+            {/* ANALYZE IMAGE BUTTON */}
             <button
               onClick={handleAnalyzeImage}
-              disabled={isAnalyzing}
-              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 via-cyan-500 to-teal-500 hover:from-indigo-400 hover:to-teal-400 text-black font-extrabold text-xs uppercase tracking-wider shadow-xl shadow-cyan-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 disabled:opacity-50"
+              disabled={isAnalyzing || !selectedFile}
+              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-500 via-cyan-500 to-teal-500 hover:from-indigo-400 hover:to-teal-400 text-black font-extrabold text-xs uppercase tracking-wider shadow-xl shadow-cyan-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Cpu className={`w-4 h-4 fill-black ${isAnalyzing ? 'animate-spin' : ''}`} />
-              <span>{isAnalyzing ? 'AI ANALYZING IMAGE...' : 'ANALYZE IMAGE'}</span>
+              <span>{isAnalyzing ? 'Analyzing image with AI model...' : 'ANALYZE IMAGE'}</span>
             </button>
           </div>
         </div>
 
-        {/* STEP 2: Realistic AI Analysis Pipeline Animation (7 Cols) */}
+        {/* Live Visual Preview & Bounding Box Viewport (7 Cols) */}
         <div className="lg:col-span-7">
-          <div className="glass-panel p-5 rounded-2xl border-indigo-500/40 shadow-2xl h-full flex flex-col justify-between bg-gradient-to-b from-[#0e1733] via-[#091224] to-[#070e1c]">
+          <div className="glass-panel p-5 rounded-3xl border-indigo-500/40 shadow-2xl h-full flex flex-col justify-between bg-gradient-to-b from-[#0e1733] via-[#091224] to-[#070e1c]">
             <div>
               <div className="flex items-center justify-between pb-3 border-b border-[#1c315e]">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    <Cpu className="w-4 h-4 animate-pulse" />
+                    <Eye className="w-4 h-4" />
                   </div>
                   <div>
                     <h2 className="text-sm font-extrabold text-white tracking-tight">
-                      🤖 AI ANALYSIS
+                      IMAGE PREVIEW & YOLO11 OVERLAY
                     </h2>
                     <span className="text-[11px] text-cyan-300 font-mono">
-                      Convolutional U-Net Segmentation Engine
+                      {selectedFile ? selectedFile.name : 'Awaiting image selection'}
                     </span>
                   </div>
                 </div>
 
-                {isAnalysisComplete && !isAnalyzing && (
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    ✓ ANALYSIS COMPLETE
+                {analysisResult && (
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    ✓ INFERENCE COMPLETE
                   </span>
                 )}
               </div>
 
-              {/* Live Processing Checkpoints */}
-              <div className="mt-4 space-y-2 text-xs font-mono">
-                <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
-                  analysisStep >= 1 || isAnalysisComplete
-                    ? 'bg-[#081822] border-emerald-500/40 text-emerald-300'
-                    : 'bg-[#080e1d] border-[#1c315e] text-slate-500'
-                }`}>
-                  <span className="font-bold">✓</span>
-                  <span>Detecting disaster type ({activeScenario.disaster})</span>
-                </div>
+              {/* Viewport Preview Area */}
+              <div className="relative mt-4 h-64 sm:h-72 rounded-2xl overflow-hidden bg-black border border-[#1c315e] flex items-center justify-center shadow-inner">
+                {imagePreviewUrl ? (
+                  <>
+                    <img
+                      ref={imageElementRef}
+                      src={imagePreviewUrl}
+                      alt="Selected target"
+                      className="w-full h-full object-contain"
+                    />
+                    <canvas
+                      ref={canvasOverlayRef}
+                      className="absolute inset-0 w-full h-full pointer-events-none"
+                    />
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-center p-6 text-slate-500">
+                    <ImageIcon className="w-10 h-10 mb-2 opacity-40" />
+                    <span className="text-xs font-mono">No image loaded</span>
+                    <span className="text-[10px] text-slate-600 mt-0.5">Select an image on the left to preview</span>
+                  </div>
+                )}
 
-                <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
-                  analysisStep >= 2 || isAnalysisComplete
-                    ? 'bg-[#081822] border-emerald-500/40 text-emerald-300'
-                    : 'bg-[#080e1d] border-[#1c315e] text-slate-500'
-                }`}>
-                  <span className="font-bold">✓</span>
-                  <span>Identifying affected areas ({activeScenario.affectedArea} surface coverage)</span>
-                </div>
-
-                <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
-                  analysisStep >= 3 || isAnalysisComplete
-                    ? 'bg-[#081822] border-emerald-500/40 text-emerald-300'
-                    : 'bg-[#080e1d] border-[#1c315e] text-slate-500'
-                }`}>
-                  <span className="font-bold">✓</span>
-                  <span>Detecting damaged infrastructure ({activeScenario.blockedRoads} roads, {activeScenario.buildings} buildings)</span>
-                </div>
-
-                <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 ${
-                  analysisStep >= 4 || isAnalysisComplete
-                    ? 'bg-[#081822] border-emerald-500/40 text-emerald-300'
-                    : 'bg-[#080e1d] border-[#1c315e] text-slate-500'
-                }`}>
-                  <span className="font-bold">✓</span>
-                  <span>Estimating risk level ({activeScenario.risk})</span>
-                </div>
+                {/* Loading state animation */}
+                {isAnalyzing && (
+                  <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center text-center gap-3 z-20">
+                    <div className="p-3 rounded-2xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 animate-spin">
+                      <Cpu className="w-8 h-8" />
+                    </div>
+                    <span className="text-sm font-bold text-white font-mono animate-pulse">
+                      Analyzing image with AI model...
+                    </span>
+                    <span className="text-xs text-cyan-300 font-mono">
+                      Executing YOLO11 best.pt forward pass
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Disclosure Notice */}
-            <div className="mt-4 p-3 rounded-xl bg-[#080e1d] border border-[#1c315e] flex items-center gap-2 text-xs text-slate-400">
-              <Info className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-              <span className="text-[11px] italic">
-                "Demo AI analysis using simulated results."
-              </span>
-            </div>
+            {/* Error Banner */}
+            {errorMessage && (
+              <div className="mt-4 p-3.5 rounded-2xl bg-red-950/40 border border-red-500/60 text-red-300 flex items-center gap-3 text-xs">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-400" />
+                <div>
+                  <strong className="block font-bold">Inference Error</strong>
+                  <span>{errorMessage}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* ================================================== */}
-      {/* 4. STEP 3: AI RESULTS (4 Clean Metric Cards)        */}
+      {/* 3. REAL RESULT UI CARDS (Displayed After Inference) */}
       {/* ================================================== */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        {/* Card 1: 🌊 DISASTER DETECTED */}
-        <div className="glass-panel p-4 rounded-2xl border-[#1c315e]/70">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
-            🌊 DISASTER DETECTED
-          </span>
-          <strong className="text-base font-extrabold text-white mt-1 block">
-            {activeScenario.disaster}
-          </strong>
-        </div>
+      {analysisResult && (
+        <section className="space-y-4 animate-in fade-in-50 duration-300">
+          {/* Main Status Hero Card */}
+          <div className={`glass-panel p-6 rounded-3xl border shadow-2xl transition-all ${
+            isDetectionPresent
+              ? 'border-red-500/60 bg-gradient-to-r from-red-950/40 via-[#0d162d] to-red-950/40'
+              : 'border-emerald-500/60 bg-gradient-to-r from-emerald-950/40 via-[#0d162d] to-emerald-950/40'
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className={`p-3.5 rounded-2xl border ${
+                  isDetectionPresent ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                }`}>
+                  {isDetectionPresent ? <ShieldAlert className="w-8 h-8" /> : <ShieldCheck className="w-8 h-8" />}
+                </div>
 
-        {/* Card 2: 📊 AFFECTED AREA */}
-        <div className="glass-panel p-4 rounded-2xl border-[#1c315e]/70">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
-            📊 AFFECTED AREA
-          </span>
-          <strong className="text-base font-extrabold text-cyan-300 mt-1 block font-mono">
-            {activeScenario.affectedArea}
-          </strong>
-        </div>
+                <div>
+                  <span className="text-[11px] font-mono uppercase font-bold tracking-wider text-slate-400 block">
+                    DETECTION STATUS:
+                  </span>
+                  <h2 className={`text-xl sm:text-2xl font-black tracking-tight ${
+                    isDetectionPresent ? 'text-red-300' : 'text-emerald-300'
+                  }`}>
+                    {isDetectionPresent ? '⚠ LANDSLIDE DETECTED' : 'NO LANDSLIDE DETECTED'}
+                  </h2>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    {isDetectionPresent
+                      ? `YOLO11 best.pt identified ${numDetections} landslide zone(s) with ${confidencePercent}% confidence.`
+                      : 'The uploaded image does not contain a detected landslide.'}
+                  </p>
+                </div>
+              </div>
 
-        {/* Card 3: 🚧 BLOCKED ROADS */}
-        <div className="glass-panel p-4 rounded-2xl border-[#1c315e]/70">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
-            🚧 BLOCKED ROADS
-          </span>
-          <strong className="text-base font-extrabold text-amber-300 mt-1 block font-mono">
-            {activeScenario.blockedRoads}
-          </strong>
-        </div>
+              {/* Confidence & Risk Level Right Badges */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="text-right">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase">Confidence</span>
+                  <strong className="text-xl font-mono font-extrabold text-cyan-300">
+                    {confidencePercent}%
+                  </strong>
+                </div>
 
-        {/* Card 4: 🏠 AFFECTED BUILDINGS */}
-        <div className="glass-panel p-4 rounded-2xl border-[#1c315e]/70">
-          <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
-            🏠 AFFECTED BUILDINGS
-          </span>
-          <strong className="text-base font-extrabold text-red-300 mt-1 block font-mono">
-            {activeScenario.buildings}
-          </strong>
-        </div>
-
-        {/* Card 5: ⚠️ RISK LEVEL */}
-        <div className="glass-panel p-4 rounded-2xl border-red-500/40">
-          <span className="text-[10px] font-mono font-bold uppercase text-red-400 block">
-            ⚠️ RISK LEVEL
-          </span>
-          <strong className="text-base font-extrabold text-red-300 mt-1 block font-mono uppercase">
-            {activeScenario.risk}
-          </strong>
-        </div>
-      </section>
-
-      {/* ================================================== */}
-      {/* 5. BEFORE AND AFTER ANALYSIS (Visual Comparison)   */}
-      {/* ================================================== */}
-      <section className="glass-panel p-6 rounded-3xl border-cyan-500/30 shadow-2xl space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-[#1c315e]">
-          <div>
-            <h2 className="text-sm font-extrabold text-white tracking-tight flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-cyan-400" />
-              Before & After Visual Segmentation Analysis
-            </h2>
-            <p className="text-xs text-slate-400">
-              Raw optical satellite capture vs AI-extracted damage mask
-            </p>
-          </div>
-          <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">
-            Split Comparison
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* LEFT: ORIGINAL IMAGE */}
-          <div className="space-y-2">
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300 block">
-              ORIGINAL IMAGE (Satellite / Drone Image)
-            </span>
-            <div className="relative h-64 rounded-2xl overflow-hidden border border-[#1c315e] bg-gradient-to-tr from-[#0a1628] to-[#122344] flex items-center justify-center shadow-inner">
-              {/* Synthetic Terrain */}
-              <svg className="w-full h-full opacity-40" xmlns="http://www.w3.org/2000/svg">
-                <path d="M-20,200 Q200,80 400,180 T800,120" fill="none" stroke="#25426e" strokeWidth="35" />
-                <path d="M250,100 Q350,220 500,280" fill="none" stroke="#1c3355" strokeWidth="20" />
-              </svg>
-              <div className="absolute top-3 left-3 bg-black/70 px-2.5 py-1 rounded text-[10px] font-mono text-slate-300 border border-[#1c315e]">
-                RAW OPTICAL SATELLITE
+                <div className="text-right border-l border-[#1c315e] pl-3">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase">Risk Level</span>
+                  <strong className={`text-xl font-mono font-extrabold uppercase ${
+                    riskLevel === 'HIGH' ? 'text-red-400' : riskLevel === 'MEDIUM' ? 'text-amber-400' : 'text-emerald-400'
+                  }`}>
+                    {riskLevel}
+                  </strong>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* RIGHT: AI ANALYSIS RESULT */}
-          <div className="space-y-2">
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-cyan-300 block">
-              AI ANALYSIS RESULT ({activeScenario.maskLabel})
-            </span>
-            <div className="relative h-64 rounded-2xl overflow-hidden border border-cyan-500/40 bg-gradient-to-tr from-[#0a1628] to-[#122344] flex items-center justify-center shadow-inner">
-              {/* Synthetic Terrain with Glowing AI Mask */}
-              <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M-20,200 Q200,80 400,180 T800,120"
-                  fill="none"
-                  stroke={activeScenario.maskColor}
-                  strokeWidth="50"
-                  className="animate-pulse opacity-80"
-                />
-                <path
-                  d="M250,100 Q350,220 500,280"
-                  fill="none"
-                  stroke={activeScenario.maskColor}
-                  strokeWidth="30"
-                  className="animate-pulse opacity-70"
-                />
-              </svg>
-
-              {/* Overlay Pins */}
-              <div className="absolute top-20 right-28 bg-red-500/40 border border-red-400 px-2 py-1 rounded text-[10px] font-mono text-red-100 animate-pulse">
-                🔴 {activeScenario.buildings} Buildings Impacted
-              </div>
-              <div className="absolute bottom-16 left-24 bg-amber-500/40 border border-amber-400 px-2 py-1 rounded text-[10px] font-mono text-amber-100 animate-pulse">
-                ⚠️ {activeScenario.blockedRoads} Roads Severed
-              </div>
-
-              <div className="absolute top-3 left-3 bg-black/80 px-2.5 py-1 rounded text-[10px] font-mono text-cyan-300 border border-cyan-500/40">
-                {activeScenario.maskLabel}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================== */}
-      {/* 6. AI INSIGHT & ADD TO MAP (Hero Callout)          */}
-      {/* ================================================== */}
-      <section className="glass-panel p-6 rounded-3xl border-cyan-500/40 shadow-2xl bg-gradient-to-r from-[#0c1836] via-[#091326] to-[#0c1836]">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <h3 className="text-sm font-extrabold text-white tracking-tight">
-                🤖 AI INSIGHT
-              </h3>
+          {/* 5 Distinct Spec Telemetry Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {/* Card 1: Detection Status */}
+            <div className="glass-panel p-4 rounded-2xl border-[#1c315e]/80 bg-[#081226]/80">
+              <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
+                STATUS
+              </span>
+              <strong className={`text-sm font-extrabold mt-1 block ${
+                isDetectionPresent ? 'text-red-400' : 'text-emerald-400'
+              }`}>
+                {isDetectionPresent ? 'LANDSLIDE DETECTED' : 'NO LANDSLIDE DETECTED'}
+              </strong>
             </div>
 
-            <p className="text-sm font-bold text-white leading-snug">
-              "{activeScenario.insightText}"
-            </p>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs font-mono text-slate-300">
-              <div>Affected Area: <strong className="text-cyan-300">{activeScenario.affectedArea}</strong></div>
-              <div>Road Blockages: <strong className="text-amber-300">{activeScenario.blockedRoads}</strong></div>
-              <div>Buildings: <strong className="text-red-300">{activeScenario.buildings}</strong></div>
-              <div>Risk: <strong className="text-red-400">🔴 {activeScenario.risk}</strong></div>
+            {/* Card 2: Detected Class */}
+            <div className="glass-panel p-4 rounded-2xl border-[#1c315e]/80 bg-[#081226]/80">
+              <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
+                DETECTED CLASS
+              </span>
+              <strong className="text-base font-extrabold text-white mt-1 block font-mono uppercase">
+                {detectedClassName}
+              </strong>
             </div>
 
-            <p className="text-xs text-slate-400 pt-1">
-              <strong>RECOMMENDED ACTION:</strong> "Add incident to Disaster Map and alert nearby rescue teams."
-            </p>
+            {/* Card 3: Confidence Percentage */}
+            <div className="glass-panel p-4 rounded-2xl border-[#1c315e]/80 bg-[#081226]/80">
+              <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
+                CONFIDENCE SCORE
+              </span>
+              <strong className="text-base font-extrabold text-cyan-300 mt-1 block font-mono">
+                {confidencePercent}%
+              </strong>
+            </div>
+
+            {/* Card 4: Number of Detections */}
+            <div className="glass-panel p-4 rounded-2xl border-[#1c315e]/80 bg-[#081226]/80">
+              <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
+                NUMBER OF DETECTIONS
+              </span>
+              <strong className="text-base font-extrabold text-amber-300 mt-1 block font-mono">
+                {numDetections}
+              </strong>
+            </div>
+
+            {/* Card 5: Risk Level */}
+            <div className={`glass-panel p-4 rounded-2xl border ${
+              riskLevel === 'HIGH' ? 'border-red-500/50 bg-red-950/20' : riskLevel === 'MEDIUM' ? 'border-amber-500/50 bg-amber-950/20' : 'border-emerald-500/50 bg-emerald-950/20'
+            }`}>
+              <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">
+                RISK LEVEL
+              </span>
+              <strong className={`text-base font-extrabold mt-1 block font-mono uppercase ${
+                riskLevel === 'HIGH' ? 'text-red-400' : riskLevel === 'MEDIUM' ? 'text-amber-400' : 'text-emerald-400'
+              }`}>
+                {riskLevel}
+              </strong>
+            </div>
           </div>
 
-          {/* ADD TO MAP ACTION */}
-          <div className="w-full lg:w-72 flex-shrink-0">
-            {isAddedToMap ? (
-              <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 flex flex-col items-center text-center gap-1.5 shadow-xl animate-in zoom-in-95 duration-200">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-                <span className="font-extrabold text-xs text-white">
-                  ✓ INCIDENT ADDED TO LIVE MAP
-                </span>
-                <span className="text-[10px] text-emerald-300 font-mono">
-                  Coordinates plotted on GIS Grid
-                </span>
+          {/* Detections Coordinates Breakdown */}
+          {analysisResult.detections && analysisResult.detections.length > 0 && (
+            <div className="glass-panel p-5 rounded-3xl border-[#1c315e]/80 bg-[#081226]/80 space-y-3">
+              <span className="text-xs font-mono font-bold text-slate-300 block uppercase">
+                Bounding Box Telemetry:
+              </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {analysisResult.detections.map((d, i) => (
+                  <div key={i} className="p-3 rounded-xl bg-[#060c18] border border-cyan-500/20 flex items-center justify-between text-xs font-mono">
+                    <div>
+                      <span className="text-cyan-300 font-bold block">Zone #{i + 1}: {d.class.toUpperCase()}</span>
+                      <span className="text-slate-400 text-[11px]">
+                        [{d.bbox.x1}, {d.bbox.y1}] → [{d.bbox.x2}, {d.bbox.y2}]
+                      </span>
+                    </div>
+                    <span className="px-2 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">
+                      {Math.round(d.confidence * 100)}%
+                    </span>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <button
-                onClick={handleAddToMap}
-                className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-black font-extrabold text-xs uppercase tracking-wider shadow-2xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
-              >
-                <MapPin className="w-4 h-4 fill-black" />
-                <span>ADD TO DISASTER MAP</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
+            </div>
+          )}
 
-      {/* ================================================== */}
-      {/* 7. AI VISION WORKFLOW (Bottom Chain)               */}
-      {/* ================================================== */}
-      <section className="glass-panel p-4 rounded-2xl border-[#1c315e]/70 bg-gradient-to-r from-[#091224] via-[#0b162f] to-[#091224]">
-        <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-2">
-          AI VISION WORKFLOW:
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 text-center text-xs">
-          <div className="p-2.5 rounded-xl bg-[#080e1d] border border-[#1c315e]">
-            <span className="font-bold text-white block">🖼️ IMAGE</span>
-            <span className="text-[10px] text-slate-400">Satellite / Drone</span>
-          </div>
+          {/* Action Trigger Card */}
+          <div className="glass-panel p-6 rounded-3xl border-cyan-500/40 shadow-2xl bg-gradient-to-r from-[#0c1836] via-[#091326] to-[#0c1836] flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="text-sm font-extrabold text-white">GIS Command Center Synchronization</h3>
+              <p className="text-xs text-slate-300">
+                Log the verified YOLO11 landslide coordinates to ResQAI's active disaster map.
+              </p>
+            </div>
 
-          <div className="p-2.5 rounded-xl bg-[#080e1d] border border-cyan-500/30">
-            <span className="font-bold text-cyan-300 block">🤖 AI VISION</span>
-            <span className="text-[10px] text-slate-400">U-Net Segmentation</span>
+            <div className="w-full sm:w-auto">
+              {isAddedToMap ? (
+                <div className="p-3 px-6 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 flex items-center gap-2 font-bold text-xs">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>LOGGED TO LIVE MAP</span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleAddToMap}
+                  disabled={!isDetectionPresent}
+                  className="w-full sm:w-auto py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-black font-extrabold text-xs uppercase tracking-wider shadow-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <MapPin className="w-4 h-4 fill-black" />
+                  <span>ADD TO DISASTER MAP</span>
+                </button>
+              )}
+            </div>
           </div>
-
-          <div className="p-2.5 rounded-xl bg-[#080e1d] border border-[#1c315e]">
-            <span className="font-bold text-white block">🔍 DISASTER DETECTED</span>
-            <span className="text-[10px] text-slate-400">Flood / Landslide</span>
-          </div>
-
-          <div className="p-2.5 rounded-xl bg-[#080e1d] border border-[#1c315e]">
-            <span className="font-bold text-white block">📊 DAMAGE ASSESSMENT</span>
-            <span className="text-[10px] text-slate-400">Surface % & Roads</span>
-          </div>
-
-          <div className="p-2.5 rounded-xl bg-[#080e1d] border border-emerald-500/30">
-            <span className="font-bold text-emerald-300 block">🗺️ ADD TO MAP</span>
-            <span className="text-[10px] text-slate-400">GIS Layer Sync</span>
-          </div>
-
-          <div className="p-2.5 rounded-xl bg-[#080e1d] border border-teal-500/30">
-            <span className="font-bold text-teal-300 block">🚑 RESCUE RESPONSE</span>
-            <span className="text-[10px] text-slate-400">Field Dispatch</span>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 };

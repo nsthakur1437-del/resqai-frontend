@@ -13,6 +13,7 @@ import { LiveCommandMap } from './pages/LiveCommandMap';
 import { RescueCoordination } from './pages/RescueCoordination';
 import { Resources } from './pages/Resources';
 import { AiVision } from './pages/AiVision';
+import { LiveMonitoring } from './pages/LiveMonitoring';
 import { AiIncidentFusion } from './pages/AiIncidentFusion';
 import { PriorityQueue } from './pages/PriorityQueue';
 import { ResourceMatching } from './pages/ResourceMatching';
@@ -22,7 +23,7 @@ import { Settings } from './pages/Settings';
 // Layout wrapper for all Command Center operational pages
 const CommandCenterLayout = ({ children }) => {
   return (
-    <div className="min-h-screen bg-[#050914] text-slate-100 flex">
+    <div className="command-center-shell min-h-screen text-slate-900 flex">
       {/* Fixed Left Sidebar (Width 64 / 16rem) */}
       <Sidebar />
 
@@ -42,7 +43,7 @@ const CommandCenterLayout = ({ children }) => {
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-[#050914] text-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
       <Routes>
         {/* Full-Screen Landing & Public Portals */}
         <Route path="/" element={<Landing />} />
@@ -183,6 +184,22 @@ export default function App() {
           element={
             <CommandCenterLayout>
               <AiVision />
+            </CommandCenterLayout>
+          }
+        />
+        <Route
+          path="/monitoring"
+          element={
+            <CommandCenterLayout>
+              <LiveMonitoring />
+            </CommandCenterLayout>
+          }
+        />
+        <Route
+          path="/live-monitoring"
+          element={
+            <CommandCenterLayout>
+              <LiveMonitoring />
             </CommandCenterLayout>
           }
         />
