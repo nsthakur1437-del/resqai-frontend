@@ -1,8 +1,14 @@
 node_modules/
 .vite/
-dist/.vite/
+dist/
 __pycache__/
 *.py[cod]
+*.pt
 .env
 .env.*
 !.env.example
+.pytest_cache/
+coverage/
+*.log
+.DS_Store
+Thumbs.db

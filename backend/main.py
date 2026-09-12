@@ -1,84 +1,115 @@
-My ResQAI frontend is built, and I attempted to integrate my trained YOLO11 landslide detection model, but the prediction is not working when I test the application.
-Please inspect my COMPLETE existing project and identify exactly why the model integration is not working.
-IMPORTANT: Do not create fake predictions, mock data, hardcoded confidence scores, or simulated results.
-My trained model is:
-best.pt
-The correct architecture must be:
-FRONTEND
-↓
-IMAGE UPLOAD OR CAMERA FRAME
-↓
-FASTAPI BACKEND
-↓
-YOLO11 best.pt MODEL
-↓
-REAL INFERENCE
-↓
-JSON RESULT
-↓
-FRONTEND DISPLAY
-CHECK AND FIX THE FOLLOWING:
-Verify that best.pt exists in the backend folder and is being loaded correctly.
-Verify that the Python backend starts successfully.
-Add or verify a health endpoint:
-GET /health
-It must return the actual backend and model status.
-Verify that the frontend is sending the selected image using FormData.
-The frontend must use:
-const formData = new FormData();
-formData.append("file", selectedFile);
-Then send it to:
-[http://127.0.0.1:8000/predict](http://127.0.0.1:8000/predict)
-using a POST request.
-Verify that the backend /predict endpoint receives the uploaded image.
-Verify that YOLO11 actually runs inference using best.pt.
-Verify that the backend returns real detections, confidence scores, and bounding boxes.
-Verify that the frontend receives the actual API response and displays it.
-Check for:
-backend not running
-wrong API URL
-CORS errors
-wrong model path
-missing dependencies
-incorrect FormData field name
-frontend/backend connection errors
-model loading errors
-Python syntax errors
-hardcoded or fake predictions
-Add proper error messages so the frontend clearly shows the real reason when prediction fails.
-MY BACKEND FILE:
-backend/main.py
-The model must load with Ultralytics YOLO:
+from pathlib import Path
+
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from PIL import Image, UnidentifiedImageError
 from ultralytics import YOLO
-model = YOLO("best.pt")
-The prediction response should contain real values from the model:
-{
-"success": true,
-"detections": [],
-"total_detections": 0,
-"max_confidence": 0,
-"risk_level": "LOW"
-}
-IMPORTANT:
-Inside Python backend code, use Python boolean values:
-True
-False
-Never use lowercase:
-true
-false
-For real-time monitoring, verify that browser camera frames are actually sent to:
-POST /predict_frame
-and that the backend runs YOLO inference on every received frame.
-Do not claim real-time monitoring is working unless actual camera frames are being analyzed by the YOLO11 model.
-Keep my existing ResQAI frontend UI, design, layout, colors, and navigation unchanged.
-After fixing everything, test the complete workflow:
-Start backend.
-Check /health.
-Confirm model status is loaded.
-Upload a real test image.
-Confirm the frontend sends the image.
-Confirm /predict receives it.
-Confirm YOLO inference runs.
-Confirm the backend returns the result.
-Confirm the frontend displays the same real result.
-Show me exactly which files were fixed and what was causing the problem.
+import io
+
+
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "best.pt"
+
+app = FastAPI(title="ResQAI YOLO11 Inference API")
+app.add_middleware(
+	CORSMiddleware,
+	allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"],
+	allow_credentials=True,
+	allow_methods=["*"],
+	allow_headers=["*"],
+)
+
+model = None
+model_error = None
+
+try:
+	if not MODEL_PATH.is_file():
+		raise FileNotFoundError(f"Model file not found: {MODEL_PATH}")
+	model = YOLO(str(MODEL_PATH))
+except Exception as exc:
+	model_error = str(exc)
+
+
+def run_inference(image: Image.Image) -> dict:
+	if model is None:
+		raise HTTPException(status_code=503, detail=f"YOLO model is unavailable: {model_error}")
+
+	try:
+		result = model.predict(source=image, verbose=False)[0]
+		detections = []
+		names = result.names or {}
+
+		if result.boxes is not None:
+			for box in result.boxes:
+				coordinates = box.xyxy[0].tolist()
+				class_id = int(box.cls[0].item())
+				confidence = float(box.conf[0].item())
+				detections.append(
+					{
+						"bbox": {
+							"x1": coordinates[0],
+							"y1": coordinates[1],
+							"x2": coordinates[2],
+							"y2": coordinates[3],
+						},
+						"confidence": confidence,
+						"class": names.get(class_id, str(class_id)),
+						"class_id": class_id,
+					}
+				)
+
+		max_confidence = max((item["confidence"] for item in detections), default=0.0)
+		risk_level = "HIGH" if max_confidence >= 0.75 else "MEDIUM" if detections else "LOW"
+		height, width = image.height, image.width
+		return {
+			"success": True,
+			"detections": detections,
+			"total_detections": len(detections),
+			"max_confidence": max_confidence,
+			"risk_level": risk_level,
+			"image_size": {"width": width, "height": height},
+		}
+	except HTTPException:
+		raise
+	except Exception as exc:
+		raise HTTPException(status_code=500, detail=f"YOLO inference failed: {exc}") from exc
+
+
+async def read_image(file: UploadFile) -> Image.Image:
+	if not file.content_type or not file.content_type.startswith("image/"):
+		raise HTTPException(status_code=415, detail="Please upload a valid image file.")
+
+	try:
+		image = Image.open(io.BytesIO(await file.read()))
+		image.load()
+		return image.convert("RGB")
+	except (UnidentifiedImageError, OSError) as exc:
+		raise HTTPException(status_code=400, detail="The uploaded file is not a readable image.") from exc
+
+
+@app.get("/health")
+def health() -> dict:
+	return {
+		"status": "ok",
+		"backend": "online",
+		"model": "loaded" if model is not None else "unavailable",
+		"model_status": "ACTIVE" if model is not None else "UNAVAILABLE",
+		"model_path": str(MODEL_PATH),
+		"error": model_error,
+	}
+
+
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)) -> dict:
+	return run_inference(await read_image(file))
+
+
+@app.post("/predict_frame")
+async def predict_frame(file: UploadFile = File(...)) -> dict:
+	return run_inference(await read_image(file))
+
+
+if __name__ == "__main__":
+	import uvicorn
+
+	uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=False)
