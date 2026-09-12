@@ -84,6 +84,10 @@ This repository includes `netlify.toml` with the correct settings:
 
 Connect the GitHub repository to Netlify. Netlify will build and deploy pushes automatically. Set `VITE_API_BASE_URL` in Netlify Site configuration when the separate FastAPI backend is deployed.
 
+Public frontend: https://buildwithbharat2.netlify.app
+
+Netlify deploy dashboard: https://app.netlify.com/projects/buildwithbharat2/deploys
+
 ## GitHub workflow
 
 If this directory is already connected to a GitHub remote:
