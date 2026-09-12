@@ -199,68 +199,6 @@ export const EmergencyReports = () => {
       </div>
 
       {/* ================================================== */}
-      {/* 2. AI PROCESSING VISUAL WORKFLOW BANNER            */}
-      {/* ================================================== */}
-      <section className="glass-panel p-4 rounded-2xl border-cyan-500/30 shadow-xl bg-gradient-to-r from-[#091326] via-[#0d1c38] to-[#091326] relative overflow-hidden">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-cyan-300 font-mono flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" />
-            HOW AI TRANSFORMS EMERGENCY MESSAGES
-          </span>
-          <span className="text-[10px] text-slate-400 font-mono">
-            Step 1 in Connected Demo Flow
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 relative">
-          {/* Step 1: Emergency Message */}
-          <div className="p-3 rounded-xl bg-[#080e1d] border border-cyan-400 ring-1 ring-cyan-500/40 flex items-center gap-3 shadow-lg">
-            <div className="p-2 rounded-lg bg-blue-500/20 text-blue-300">
-              <FileText className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="text-xs font-bold text-cyan-300 block">
-                1. Emergency Message
-              </span>
-              <span className="text-[10px] text-slate-300">
-                Citizen SOS, SMS & Voice Calls
-              </span>
-            </div>
-          </div>
-
-          {/* Step 2: AI Analysis */}
-          <div className="p-3 rounded-xl bg-[#080e1d] border border-[#1c315e] flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-300">
-              <Cpu className="w-4 h-4 animate-pulse" />
-            </div>
-            <div>
-              <span className="text-xs font-bold text-white block">
-                2. 🤖 AI Analysis
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Entity Parsing & Threat Classification
-              </span>
-            </div>
-          </div>
-
-          {/* Step 3: Structured Emergency Data */}
-          <div className="p-3 rounded-xl bg-[#080e1d] border border-[#1c315e] flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-300">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="text-xs font-bold text-white block">
-                3. Structured Emergency Data
-              </span>
-              <span className="text-[10px] text-slate-400">
-                Ready for Immediate Rescue Action
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================== */}
       {/* 3. MAIN TWO-COLUMN LAYOUT                          */}
       {/* ================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

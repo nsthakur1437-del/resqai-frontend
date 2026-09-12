@@ -8,12 +8,24 @@ import io
 
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "best.pt"
+PROJECT_ROOT = BASE_DIR.parent
+MODEL_CANDIDATES = [
+    PROJECT_ROOT / "model" / "best.pt",
+    BASE_DIR / "best.pt",
+]
+MODEL_PATH = next((path for path in MODEL_CANDIDATES if path.is_file()), MODEL_CANDIDATES[0])
 
 app = FastAPI(title="ResQAI YOLO11 Inference API")
 app.add_middleware(
 	CORSMiddleware,
-	allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"],
+	allow_origins=[
+		"http://localhost:5173",
+		"http://127.0.0.1:5173",
+		"http://localhost:3000",
+		"http://127.0.0.1:3000",
+		"http://localhost:4173",
+		"http://127.0.0.1:4173",
+	],
 	allow_credentials=True,
 	allow_methods=["*"],
 	allow_headers=["*"],

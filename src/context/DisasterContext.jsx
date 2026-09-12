@@ -147,6 +147,69 @@ export const DisasterProvider = ({ children }) => {
     );
   };
 
+  const resolveIncident = (incidentId) => {
+    const targetIncident = incidents.find(i => i.id === incidentId);
+    if (!targetIncident || targetIncident.status === 'Resolved') return;
+
+    setIncidents(prev => prev.map(incident => (
+      incident.id === incidentId
+        ? {
+            ...incident,
+            status: 'Resolved',
+            priority: 'Resolved',
+            severity: 'Resolved',
+            timeline: [
+              ...incident.timeline,
+              {
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                text: 'Incident marked resolved by operations command'
+              }
+            ]
+          }
+        : incident
+    )));
+
+    if (targetIncident.assignedTeam) {
+      setRescueTeams(prev => prev.map(team => (
+        team.id === targetIncident.assignedTeam
+          ? { ...team, status: 'Available', assignedIncidentId: null }
+          : team
+      )));
+    }
+
+    setActivityLog(prev => [{
+      id: 'ACT-' + Date.now(),
+      type: 'resolved',
+      icon: 'CheckCircle2',
+      text: `${targetIncident.title} marked resolved`,
+      time: 'Just now',
+      badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+    }, ...prev]);
+    soundFX.playSuccess();
+    addToast('Incident Resolved', `${targetIncident.title} has been closed and returned to the incident log.`, 'success');
+  };
+
+  const deployResource = (resourceId, incidentId) => {
+    const resource = resources.find(item => item.id === resourceId);
+    const incident = incidents.find(item => item.id === incidentId);
+    if (!resource || !incident || resource.status === 'Deployed') return;
+
+    setResources(prev => prev.map(item => (
+      item.id === resourceId
+        ? { ...item, status: 'Deployed', assignedIncidentId: incidentId }
+        : item
+    )));
+    setActivityLog(prev => [{
+      id: 'ACT-' + Date.now(),
+      type: 'resource',
+      icon: 'Send',
+      text: `${resource.name} deployed to ${incident.location}`,
+      time: 'Just now',
+      badgeColor: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30'
+    }, ...prev]);
+    addToast('Resource Deployed', `${resource.name} is now assigned to ${incident.title}.`, 'success');
+  };
+
   // Simulate an incoming live emergency report to wow judges during live presentations
   const simulateIncomingEmergency = (customReportText) => {
     soundFX.playEmergencyAlert();
@@ -326,6 +389,7 @@ export const DisasterProvider = ({ children }) => {
         rescueTeams,
         setRescueTeams,
         resources,
+        setResources,
         roadBlocks,
         activityLog,
         selectedIncidentId,
@@ -337,6 +401,8 @@ export const DisasterProvider = ({ children }) => {
         soundEnabled,
         setSoundEnabled,
         assignRescueTeam,
+        resolveIncident,
+        deployResource,
         simulateIncomingEmergency,
         addIncidentFromVision,
         resetDemoData,

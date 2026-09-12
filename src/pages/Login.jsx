@@ -64,80 +64,53 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#050914] text-slate-100 flex flex-col justify-between relative overflow-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
-      {/* Background Atmosphere & High-Tech Radar Grids */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div
-          className="absolute inset-0 opacity-[0.035]"
-          style={{
-            backgroundImage: `linear-gradient(to right, #38bdf8 1px, transparent 1px), linear-gradient(to bottom, #38bdf8 1px, transparent 1px)`,
-            backgroundSize: '40px 40px'
-          }}
-        />
-        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-cyan-500/15 rounded-full blur-[160px]" />
-        <div className="absolute bottom-[-15%] right-[-10%] w-[600px] h-[600px] bg-blue-600/15 rounded-full blur-[180px]" />
-        <div className="absolute top-[40%] right-[20%] w-[400px] h-[400px] bg-red-500/08 rounded-full blur-[140px]" />
-      </div>
-
-      {/* Top Header / Back Link */}
-      <header className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between relative overflow-hidden">
+      <header className="relative z-10 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
         <Link
           to="/"
           onClick={() => soundFX.playClick()}
-          className="inline-flex items-center gap-2 text-xs font-mono font-bold text-slate-400 hover:text-cyan-300 transition-colors group"
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors group"
         >
-          <ArrowLeft className="w-4 h-4 text-cyan-400 group-hover:-translate-x-1 transition-transform" />
-          <span>Return to Public Portal</span>
+          <ArrowLeft className="w-4 h-4 text-sky-600 group-hover:-translate-x-1 transition-transform" />
+          <span>Back to home</span>
         </Link>
 
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>AUTH GATEWAY ACTIVE</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Secure access</span>
         </div>
       </header>
 
-      {/* Main Login Card Container */}
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-8 sm:px-6">
         <div className="w-full max-w-md">
-          {/* Glassmorphism Card */}
-          <div className="glass-panel p-7 sm:p-9 rounded-3xl border-cyan-500/30 shadow-2xl bg-gradient-to-b from-[#0a152d]/95 via-[#071022]/95 to-[#050914]/95 relative overflow-hidden backdrop-blur-2xl">
-            {/* Ambient inner glow */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
-
-            {/* Brand Logo & Header */}
-            <div className="text-center space-y-3 pb-6 border-b border-[#1c315e]/60">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 shadow-xl shadow-cyan-500/25 ring-2 ring-cyan-400/40 mx-auto">
-                <Shield className="w-7 h-7 text-white drop-shadow" />
-                <Mountain className="w-4 h-4 text-cyan-200 absolute bottom-3 left-4 drop-shadow" />
+          <div className="bg-white border border-slate-200 shadow-lg rounded-3xl p-7 sm:p-9 relative overflow-hidden">
+            <div className="text-center space-y-3 pb-6 border-b border-slate-200">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-600 shadow-sm mx-auto">
+                <Shield className="w-7 h-7 text-white" />
               </div>
 
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-display">
-                  Welcome to ResQ<span className="text-cyan-400">AI</span>
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                  Welcome to ResQAI
                 </h1>
-                <p className="text-xs text-slate-300 mt-1 font-medium leading-relaxed">
-                  "AI-Powered Disaster Response & Rescue Coordination"
+                <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+                  Sign in to continue to the response dashboard.
                 </p>
-              </div>
-
-              <div className="inline-block text-[11px] font-mono text-cyan-300/90 italic">
-                "Nature Warns. We Act."
               </div>
             </div>
 
-            {/* Quick 1-Click Demo Login Banner */}
-            <div className="mt-5 p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-xs font-mono text-cyan-300">
-                <Sparkles className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-                <span>Hackathon Demo Access</span>
+            <div className="mt-5 p-3 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-medium text-sky-700">
+                <Sparkles className="w-4 h-4 text-sky-600 flex-shrink-0" />
+                <span>Demo access</span>
               </div>
 
               <button
                 type="button"
                 onClick={handleQuickDemoLogin}
-                className="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-extrabold tracking-wide uppercase shadow-md transition-all active:scale-95 cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold tracking-wide uppercase shadow-sm transition-all active:scale-95 cursor-pointer"
               >
-                1-Click Sign In
+                Sign in
               </button>
             </div>
 

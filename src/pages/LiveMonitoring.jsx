@@ -63,7 +63,7 @@ export const LiveMonitoring = () => {
   const lastAlertTimeRef = useRef(0);
   const fpsTrackerRef = useRef({ frames: 0, lastTime: performance.now() });
 
-  const BACKEND_URL = 'http://127.0.0.1:8000';
+  const BACKEND_URL = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 
   // Check Backend Connection & Model Status on Mount
   const checkBackendHealth = useCallback(async () => {

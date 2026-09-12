@@ -174,46 +174,46 @@ export const DispatchCenter = () => {
       {/* ================================================== */}
       {/* 1. PAGE HEADER                                     */}
       {/* ================================================== */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1c315e]/70">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/20">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-sm">
                 <Send className="w-6 h-6" />
               </div>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-emerald-200">
-                Dispatch Center
+              <span>
+                Dispatch center
               </span>
             </h1>
 
-            <span className="text-[10px] font-mono font-bold tracking-widest px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 uppercase shadow">
-              HUMAN-IN-THE-LOOP DECISION CENTER
+            <span className="text-[10px] font-bold tracking-[0.18em] px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase shadow-sm">
+              Live dispatch
             </span>
           </div>
 
-          <p className="text-xs sm:text-sm text-slate-300 mt-1.5 font-medium italic">
-            "Review, approve, and coordinate emergency resource deployment."
+          <p className="text-xs sm:text-sm text-slate-600 mt-1.5 font-medium">
+            Review and assign emergency response teams.
           </p>
         </div>
 
         {/* Live Indicator */}
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#08152c] border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold shadow-inner">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold shadow-sm">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
-            <span>● DISPATCH OPERATIONS LIVE</span>
+            <span>Operations live</span>
           </div>
 
           {isDispatched && (
             <button
               onClick={handleResetDispatch}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0d172e] hover:bg-[#132347] text-slate-300 hover:text-white border border-[#1c315e] text-xs font-semibold transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition-all cursor-pointer"
               title="Reset state to re-run demo"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Reset Dispatch</span>
+              <RotateCcw className="w-3.5 h-3.5 text-sky-600" />
+              <span>Reset dispatch</span>
             </button>
           )}
         </div>
@@ -633,49 +633,40 @@ export const DispatchCenter = () => {
       {/* ================================================== */}
       {/* 5. COMPLETE WORKFLOW VISUAL BANNER (Prompt Spec)   */}
       {/* ================================================== */}
-      <section className="glass-panel p-5 rounded-2xl border-cyan-500/30 shadow-2xl bg-gradient-to-r from-[#071126] via-[#091a38] to-[#071126]">
+      <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
         <div className="text-center max-w-2xl mx-auto mb-4">
-          <span className="text-xs font-mono font-bold uppercase tracking-widest text-cyan-300 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30">
-            COMPLETE RESQAI OPERATIONAL LIFECYCLE
+          <span className="text-xs font-bold uppercase tracking-[0.18em] text-sky-700 px-3 py-1 rounded-full bg-sky-50 border border-sky-200">
+            Response flow
           </span>
-          <h3 className="text-base font-extrabold text-white mt-1.5">
-            "From Chaos to Coordinated Rescue"
+          <h3 className="text-base font-extrabold text-slate-900 mt-1.5">
+            Incident to action
           </h3>
         </div>
 
-        {/* 8-Stage Pipeline */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-center text-[10px] font-mono">
-          <div className="p-2 rounded-xl bg-[#060c1a] border border-[#1c315e]">
-            <span className="text-slate-400 block">📞 📱 👤 🛰️</span>
-            <span className="text-white font-bold block mt-1">MULTI-SOURCE</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-center text-[10px] font-medium">
+          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+            <span className="block">Report</span>
           </div>
-          <div className="p-2 rounded-xl bg-[#060c1a] border border-[#1c315e]">
-            <span className="text-cyan-400 block">🤖</span>
-            <span className="text-cyan-300 font-bold block mt-1">AI FUSION</span>
+          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+            <span className="block">Verify</span>
           </div>
-          <div className="p-2 rounded-xl bg-[#060c1a] border border-[#1c315e]">
-            <span className="text-slate-400 block">🔍</span>
-            <span className="text-white font-bold block mt-1">VERIFIED</span>
+          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+            <span className="block">Assess</span>
           </div>
-          <div className="p-2 rounded-xl bg-[#060c1a] border border-[#1c315e]">
-            <span className="text-red-400 block">🚨</span>
-            <span className="text-red-300 font-bold block mt-1">PRIORITY P1</span>
+          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+            <span className="block">Prioritize</span>
           </div>
-          <div className="p-2 rounded-xl bg-[#060c1a] border border-[#1c315e]">
-            <span className="text-cyan-400 block">🚤</span>
-            <span className="text-cyan-300 font-bold block mt-1">MATCHING</span>
+          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+            <span className="block">Assign</span>
           </div>
-          <div className="p-2 rounded-xl bg-[#060c1a] border border-[#1c315e]">
-            <span className="text-slate-400 block">👤</span>
-            <span className="text-white font-bold block mt-1">APPROVAL</span>
+          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+            <span className="block">Approve</span>
           </div>
-          <div className="p-2 rounded-xl bg-[#060c1a] border border-emerald-500/30">
-            <span className="text-emerald-400 block">📢</span>
-            <span className="text-emerald-300 font-bold block mt-1">DISPATCH</span>
+          <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700">
+            <span className="block">Dispatch</span>
           </div>
-          <div className="p-2 rounded-xl bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 border border-emerald-400 font-extrabold text-emerald-300 animate-pulse">
-            <span className="block">✓</span>
-            <span className="block mt-1">ACTIVE RESPONSE</span>
+          <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold">
+            <span className="block">Live</span>
           </div>
         </div>
       </section>

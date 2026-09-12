@@ -23,18 +23,14 @@ import { Settings } from './pages/Settings';
 // Layout wrapper for all Command Center operational pages
 const CommandCenterLayout = ({ children }) => {
   return (
-    <div className="command-center-shell min-h-screen text-slate-900 flex">
-      {/* Fixed Left Sidebar (Width 64 / 16rem) */}
+    <div className="command-center-shell min-h-screen text-slate-100">
       <Sidebar />
 
-      {/* Main Content Area */}
-      <div className="flex-1 ml-64 flex flex-col min-w-0">
-        {/* Sticky Command Header */}
+      <div className="ml-72 flex min-h-screen flex-col min-w-0">
         <Header />
 
-        {/* Page Content Body */}
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
-          {children}
+        <main className="flex-1 px-6 py-6 lg:px-8">
+          <div className="mx-auto w-full max-w-[1600px]">{children}</div>
         </main>
       </div>
     </div>
@@ -43,7 +39,7 @@ const CommandCenterLayout = ({ children }) => {
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-[#020b17] text-slate-100">
       <Routes>
         {/* Full-Screen Landing & Public Portals */}
         <Route path="/" element={<Landing />} />
@@ -59,6 +55,7 @@ export default function App() {
             </CommandCenterLayout>
           }
         />
+        <Route path="/analytics" element={<CommandCenterLayout><Dashboard /></CommandCenterLayout>} />
         <Route
           path="/fusion"
           element={
@@ -83,6 +80,7 @@ export default function App() {
             </CommandCenterLayout>
           }
         />
+        <Route path="/alerts" element={<CommandCenterLayout><EmergencyReports /></CommandCenterLayout>} />
         <Route
           path="/priority"
           element={
@@ -131,6 +129,7 @@ export default function App() {
             </CommandCenterLayout>
           }
         />
+        <Route path="/live-map" element={<CommandCenterLayout><LiveCommandMap /></CommandCenterLayout>} />
         <Route
           path="/command-map"
           element={
@@ -155,6 +154,7 @@ export default function App() {
             </CommandCenterLayout>
           }
         />
+        <Route path="/rescue-coordination" element={<CommandCenterLayout><RescueCoordination /></CommandCenterLayout>} />
         <Route
           path="/dispatch"
           element={
@@ -187,6 +187,7 @@ export default function App() {
             </CommandCenterLayout>
           }
         />
+        <Route path="/ai-analysis" element={<CommandCenterLayout><AiVision /></CommandCenterLayout>} />
         <Route
           path="/monitoring"
           element={
@@ -195,6 +196,7 @@ export default function App() {
             </CommandCenterLayout>
           }
         />
+        <Route path="/risk-monitoring" element={<CommandCenterLayout><LiveMonitoring /></CommandCenterLayout>} />
         <Route
           path="/live-monitoring"
           element={

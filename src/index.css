@@ -4,178 +4,156 @@
 
 @layer base {
   :root {
-    --bg-main: #f6f8fb;
-    --bg-card: #ffffff;
-    --border-card: #dbe3ec;
-    --cyan-glow: rgba(8, 145, 178, 0.16);
-    --red-glow: rgba(220, 38, 38, 0.12);
+    color-scheme: dark;
+    --bg-950: #020b17;
+    --bg-900: #071427;
+    --bg-800: #0d1d2e;
+    --panel: rgba(15, 23, 42, 0.7);
+    --panel-strong: rgba(15, 23, 42, 0.88);
+    --border: rgba(148, 163, 184, 0.18);
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --cyan: #67e8f9;
+    --blue: #60a5fa;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --green: #4ade80;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
-    background-color: var(--bg-main);
-    color: #172033;
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top right, rgba(34, 211, 238, 0.12), transparent 28%),
+      radial-gradient(circle at left, rgba(59, 130, 246, 0.12), transparent 22%),
+      linear-gradient(180deg, #020b17 0%, #071427 100%);
+    color: var(--text);
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+  }
+
+  #root {
+    min-height: 100vh;
   }
 }
 
-/* A restrained aerial backdrop adds depth without competing with operational data. */
 .command-center-shell {
   position: relative;
-  isolation: isolate;
   background:
-    linear-gradient(rgba(246, 248, 251, 0.86), rgba(246, 248, 251, 0.92)),
-    url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=2400&q=82') center / cover fixed;
+    linear-gradient(180deg, rgba(2, 11, 23, 0.78) 0%, rgba(2, 11, 23, 0.82) 100%),
+    url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1800&q=80') center / cover fixed;
 }
 
 .command-center-shell::before {
   content: '';
   position: fixed;
   inset: 0;
-  z-index: -1;
   pointer-events: none;
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.3), rgba(224, 242, 254, 0.12));
+  background: linear-gradient(135deg, rgba(14, 116, 144, 0.08), rgba(2, 6, 23, 0.1));
 }
 
-/* Quiet glass surfaces keep operational screens easy to scan. */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.28);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.78);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
 .glass-panel-hover {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s ease;
 }
 
 .glass-panel-hover:hover {
-  background: rgba(255, 255, 255, 0.86);
-  border-color: rgba(8, 145, 178, 0.45);
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
   transform: translateY(-2px);
+  box-shadow: 0 26px 44px rgba(2, 6, 23, 0.32);
+  border-color: rgba(103, 232, 249, 0.28);
 }
 
-.glass-card-critical {
-  background: #fff7f7;
-  border: 1px solid #fecaca;
-  box-shadow: 0 1px 3px rgba(127, 29, 29, 0.06);
+/* Keep older operational routes inside the shared command-center visual system. */
+[class*="bg-white"],
+[class*="bg-slate-50"],
+[class*="bg-slate-100"] {
+  background-color: rgba(15, 23, 42, 0.72) !important;
+  background-image: none !important;
 }
 
-.glass-card-cyan {
-  background: #f0fdfa;
-  border: 1px solid #99f6e4;
-  box-shadow: 0 1px 3px rgba(15, 118, 110, 0.06);
+[class*="text-slate-900"],
+[class*="text-slate-800"],
+[class*="text-slate-700"] {
+  color: #e2e8f0 !important;
 }
 
-/* Custom Scrollbar */
+[class*="text-slate-600"],
+[class*="text-slate-500"] {
+  color: #94a3b8 !important;
+}
+
+[class*="border-slate-200"],
+[class*="border-slate-300"] {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #eef2f7;
+  background: rgba(15, 23, 42, 0.8);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #b9c5d3;
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.7), rgba(59, 130, 246, 0.7));
   border-radius: 9999px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #0891b2;
-}
-
-/* Map Overrides */
 .leaflet-container {
-  background: #e8eef5 !important;
-  font-family: inherit;
-  border-radius: 0.75rem;
+  background: #071427 !important;
+  border-radius: 1rem;
 }
 
-.leaflet-popup-content-wrapper {
-  background: #ffffff !important;
-  color: #172033 !important;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 0.75rem !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+@keyframes resqai-marker-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
 }
 
+.resqai-map-marker {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-  background: #ffffff !important;
-}
-
-/* Existing screens use a few literal dark utility tokens; normalize them for the light shell. */
-[class*="bg-[#050914]"],
-[class*="bg-[#060b17]"],
-[class*="bg-[#080e1d]"],
-[class*="bg-[#070e1c]"],
-[class*="bg-[#0a1818]"],
-[class*="bg-[#0c1833]"],
-[class*="bg-[#0a142c]"],
-[class*="bg-[#0d152a]"],
-[class*="bg-[#111d38]"],
-[class*="bg-[#162547]"] {
-  background-color: #ffffff !important;
-  background-image: none !important;
-}
-
-[class*="from-[#"],
-[class*="to-[#"] {
-  background-image: none !important;
-}
-
-[class*="text-white"] {
-  color: #172033 !important;
-}
-
-[class*="text-slate-100"],
-[class*="text-slate-200"],
-[class*="text-slate-300"] {
-  color: #334155 !important;
-}
-
-[class*="text-slate-400"],
-[class*="text-slate-500"] {
-  color: #64748b !important;
-}
-
-[class*="text-cyan-200"] {
-  color: #0f766e !important;
-}
-
-[class*="text-cyan-300"] {
-  color: #0e7490 !important;
-}
-
-[class*="border-[#1c315e]"],
-[class*="border-[#162547]"] {
-  border-color: #dbe3ec !important;
-}
-
-/* Radar pulse animation */
-@keyframes radar-ring {
-  0% {
-    transform: scale(0.8);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(2.4);
-    opacity: 0;
-  }
+  background: rgba(15, 23, 42, 0.96) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(148, 163, 184, 0.18) !important;
 }
 
 .radar-ring {
   animation: radar-ring 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
 }
 
-/* Scanline effect overlay */
+@keyframes radar-ring {
+  0% {
+    transform: scale(0.85);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+}
+
 .scanlines {
-  background: linear-gradient(
-    rgba(18, 16, 16, 0) 50%, 
-    rgba(0, 0, 0, 0.25) 50%
-  );
+  background: linear-gradient(rgba(255, 255, 255, 0.02) 50%, rgba(0, 0, 0, 0.2) 50%);
   background-size: 100% 4px;
   pointer-events: none;
 }

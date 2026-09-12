@@ -1,94 +1,117 @@
-# ResQAI — AI Disaster Response & Rescue Coordinator
-> *"Nature Warns. We Act."*
-> **Core Concept:** An AI-powered disaster command center that converts chaotic emergency reports into prioritized rescue actions.
+# ResQAI
 
----
+**Hackathon topic:** AI Disaster Response & Rescue Coordinator
 
-## 🌟 Hackathon Presentation Guide (10–15 Second Explainer)
+ResQAI is a React-based emergency operations interface for monitoring disaster incidents, reviewing AI detections, coordinating rescue teams, dispatching resources, and inspecting live map data. The frontend is designed to connect to a separately hosted FastAPI and YOLO11 inference service.
 
-ResQAI is built specifically to allow judges to understand the entire workflow in **under 15 seconds**:
+## Features
 
-```
-🚨 EMERGENCY REPORT
-       ↓
-🤖 AI UNDERSTANDS THE SITUATION
-       ↓
-🔴 IDENTIFIES PRIORITY
-       ↓
-🗺️ SHOWS INCIDENT ON MAP
-       ↓
-🚑 RECOMMENDS BEST RESCUE TEAM
-       ↓
-✅ RESCUE ACTION (1-Click Dispatch)
-```
+- Operations dashboard with live incident metrics and activity feed
+- Searchable and severity-filtered incident queue
+- Incident assignment, resolution, and resource deployment actions
+- Interactive Leaflet map with OpenStreetMap tiles
+- Incident, rescue team, hospital, and shelter markers
+- AI image analysis workflow connected to `POST /predict`
+- Real-time camera monitoring connected to `POST /predict_frame`
+- React Router SPA navigation with Netlify refresh support
+- Shared React Context state for incidents, teams, resources, reports, and alerts
 
----
+## Technology
 
-## 🚀 Key Features & 8 Interactive Pages
+- React 18
+- Vite 6
+- React Router 6
+- Tailwind CSS 3
+- React Leaflet and Leaflet
+- Lucide React
+- FastAPI and Ultralytics YOLO11 backend in `backend/`
 
-1. **🏠 Dashboard (`/`)**:
-   - **4 Prominent Metrics**: Active Incidents (12), Critical Cases (5), People Affected (47), Available Rescue Teams (8).
-   - **"How ResQAI Helps" Interactive Explainer Bar**: 6-step interactive workflow.
-   - **Live 2-Column Split**:
-     - *Left*: High-contrast GIS Disaster Map with real-time incident pins, hospital beds, and road blockades.
-     - *Right*: **AI Rescue Recommendation Panel** featuring the Critical Bridge A flood, Rescue Team 3 recommendation (98% match score), and a live **ASSIGN RESCUE TEAM** button with confetti, sound feedback, and real-time state mutation.
-   - **Live Rescue Updates Stream**: Real-time ticker of incoming reports and team dispatches.
+## Requirements
 
-2. **📩 Emergency Reports (`/reports`)**:
-   - Live citizen SOS and telemetry distress feed.
-   - **Interactive SOS Ingestion Box**: Judges can type or pick emergency presets to test the autonomous AI NLP extraction pipeline live.
-   - **AI Understanding Inspector**: Shows raw text vs structured entity breakdown (Location, Victims, Disaster Type, Priority Score P1-P4, Medical Urgency, Key Named Entities).
+- Node.js 18 or newer
+- npm
+- Python 3.10+ only when running the optional local AI backend
 
-3. **🚨 Active Incidents (`/incidents`)**:
-   - Filter tabs: `All`, `Critical`, `High`, `Moderate`, `Resolved`.
-   - Real-time incident table with severity color badges (Red = Critical, Orange = High, Yellow = Moderate, Green = Resolved).
-   - Modal inspection with complete incident timelines and equipment requirements.
-
-4. **🗺️ Live Disaster Map (`/map`)**:
-   - Dedicated full-screen GIS command map.
-   - Layer toggles for Incidents, Rescue Teams, Hospitals, Shelters, and Road Blockades.
-   - Clickable interactive pins with popup briefings and direct dispatch actions.
-
-5. **🚑 Rescue Coordination (`/coordination`)**:
-   - **AI Recommended Assignment Hero**: 98% match score breakdown with rationale checklist.
-   - Full 8-team roster with specialized equipment (Rescue Boats, Heavy Extrication, Thermal Drones, Mobile Trauma Surgery, K9 Detection).
-
-6. **🏥 Emergency Resources (`/resources`)**:
-   - Real-time telemetry for Hospitals, Shelters, Fire Stations, Police Posts, and Helipads.
-   - Available bed counts, ICU availability, oxygen reserve status, and food intake duration.
-
-7. **🛰️ AI Vision Analysis (`/vision`)**:
-   - **AI Vision Prototype** demonstration for satellite and drone flood segmentation.
-   - Layer toggles: *Raw Satellite*, *AI Flood Mask Only*, *Combined AI Overlay*.
-   - Instant **"ADD TO DISASTER MAP"** action creating new live geofenced incidents.
-
-8. **⚙️ Settings (`/settings`)**:
-   - Commander profile management, notification triggers, AI confidence threshold, and **"Reset Demo State"** button.
-
----
-
-## 🛠️ Technology Stack
-
-- **React 18** (Clean functional components, Hooks & Context API)
-- **Vite 6** (Blazing fast HMR and optimized production build)
-- **Tailwind CSS 3** (Custom deep-navy command center design system, glassmorphism, glowing status badges)
-- **React Router 6** (Seamless multi-page navigation)
-- **Lucide React** (Modern high-clarity iconography)
-- **Leaflet & React-Leaflet** (GIS mapping with dark CartoDB tiles and animated radar pins)
-- **Web Audio API Sound Engine** (Subtle synthesized futuristic audio chimes without external audio dependencies)
-- **Canvas Confetti** (Rewarding visual feedback on rescue team dispatches)
-
----
-
-## 💻 Running the Application Locally
+## Install and run locally
 
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Run the development server
 npm run dev
-
-# 3. Open in browser:
-http://localhost:3000
 ```
+
+The frontend is available at `http://localhost:5173`.
+
+To run the optional local inference backend in a separate terminal:
+
+```bash
+cd backend
+python -m pip install -r requirements.txt
+python main.py
+```
+
+The backend runs at `http://127.0.0.1:8000` and exposes:
+
+- `GET /health`
+- `POST /predict`
+- `POST /predict_frame`
+
+## Backend API configuration
+
+The frontend uses the local backend by default. For a deployed backend, configure this Netlify environment variable:
+
+```text
+VITE_API_BASE_URL=https://your-api.example.com
+```
+
+Do not put API keys, tokens, credentials, or private URLs in source files. Vite exposes variables prefixed with `VITE_` to the browser, so only public service URLs belong there.
+
+## Production build
+
+```bash
+npm run build
+npm run preview
+```
+
+The Vite output is written to `dist/`.
+
+## Netlify deployment
+
+This repository includes `netlify.toml` with the correct settings:
+
+- Build command: `npm run build`
+- Publish directory: `dist`
+- SPA fallback: all routes rewrite to `/index.html`
+
+Connect the GitHub repository to Netlify. Netlify will build and deploy pushes automatically. Set `VITE_API_BASE_URL` in Netlify Site configuration when the separate FastAPI backend is deployed.
+
+## GitHub workflow
+
+If this directory is already connected to a GitHub remote:
+
+```bash
+git status
+git add .
+git commit -m "Prepare ResQAI for deployment"
+git push
+```
+
+For a new repository that has not been initialized or connected:
+
+```bash
+git init
+git add .
+git commit -m "Prepare ResQAI for deployment"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
+git push -u origin main
+```
+
+Replace the remote URL with the repository you create on GitHub.
+
+## Model and repository safety
+
+The trained `best.pt` file is kept outside the frontend build and is ignored by Git. It should remain on the backend host or in private model storage. Do not publish model weights, credentials, `.env` files, generated build output, or private datasets in the frontend repository.
+
+## Future backend integration
+
+The current frontend is ready for a separately deployed FastAPI service. The YOLO11 backend can be hosted independently with CORS configured for the Netlify site domain. Set `VITE_API_BASE_URL` to that public backend URL and redeploy the frontend.

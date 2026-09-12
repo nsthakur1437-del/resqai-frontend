@@ -17,9 +17,7 @@ export const Header = () => {
   const {
     soundEnabled,
     setSoundEnabled,
-    simulateIncomingEmergency,
-    activityLog,
-    isSimulatingAi
+    activityLog
   } = useDisaster();
 
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -47,112 +45,82 @@ export const Header = () => {
   });
 
   return (
-    <header className="sticky top-0 z-30 h-20 bg-white/75 backdrop-blur-xl border-b border-slate-200/80 px-6 flex items-center justify-between">
-      {/* Left: Clean Professional Title & Subtitle */}
-      <div className="flex flex-col">
-        <h1 className="text-xl font-extrabold text-white tracking-tight uppercase">
-          AI DISASTER COMMAND CENTER
-        </h1>
-        <p className="text-xs text-cyan-300/80 font-medium">
-          Unifying fragmented disaster information into one verified and prioritized response system.
-        </p>
-      </div>
-
-      {/* Right: System Live, Date/Time, Notification, Profile Avatar */}
-      <div className="flex items-center gap-3.5">
-        {/* ● SYSTEM LIVE Indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold font-mono">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>SYSTEM LIVE</span>
+    <header className="sticky top-0 z-30 border-b border-cyan-500/10 bg-slate-950/65 px-6 py-4 backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-300">Operations overview</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-white">Response control</h1>
         </div>
 
-        {/* Current Date and Time */}
-        <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#0d152a] border border-[#1c315e]/70 text-slate-300">
-          <Clock className="w-4 h-4 text-cyan-400" />
-          <div className="flex flex-col text-right text-xs">
-            <span className="font-mono font-bold text-white tracking-wide leading-tight">
-              {formattedTime}
-            </span>
-            <span className="text-[10px] text-slate-400 font-medium leading-none">
-              {formattedDate}
-            </span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-300">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            System live
           </div>
-        </div>
 
-        {/* Audio Toggle */}
-        <button
-          onClick={() => {
-            setSoundEnabled(!soundEnabled);
-            soundFX.playClick();
-          }}
-          className={`p-2 rounded-xl border transition-colors cursor-pointer ${
-            soundEnabled
-              ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/25'
-              : 'bg-[#0d152a] border-[#1c315e]/60 text-slate-500 hover:text-slate-300'
-          }`}
-          title={soundEnabled ? 'Audio Chimes Enabled' : 'Audio Muted'}
-        >
-          {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-        </button>
+          <div className="hidden items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/80 px-3 py-2 text-slate-300 sm:flex">
+            <Clock className="h-4 w-4 text-cyan-300" />
+            <div className="text-right">
+              <div className="font-mono text-sm font-bold text-white">{formattedTime}</div>
+              <div className="text-[10px] text-slate-400">{formattedDate}</div>
+            </div>
+          </div>
 
-        {/* Notification Icon */}
-        <div className="relative">
           <button
             onClick={() => {
-              setShowNotifications(!showNotifications);
+              setSoundEnabled(!soundEnabled);
               soundFX.playClick();
             }}
-            className="relative p-2 rounded-xl bg-[#0d152a] hover:bg-[#162547] text-slate-300 hover:text-white border border-[#1c315e]/70 transition-colors cursor-pointer"
-            title="Notifications"
+            className={`rounded-2xl border p-2.5 transition-all ${
+              soundEnabled
+                ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/15'
+                : 'border-slate-800 bg-slate-900/80 text-slate-400 hover:text-slate-200'
+            }`}
+            title={soundEnabled ? 'Audio On' : 'Audio Off'}
           >
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           </button>
 
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-[#0d152a]/98 backdrop-blur-2xl border border-cyan-500/30 shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between pb-2.5 border-b border-[#1c315e]">
-                <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <Bell className="w-3.5 h-3.5 text-cyan-400" />
-                  Live Incident Notifications
-                </h4>
-                <span className="text-[10px] text-cyan-300 font-mono">
-                  {activityLog.length} Updates
-                </span>
-              </div>
-              <div className="mt-2 space-y-2 max-h-60 overflow-y-auto pr-1">
-                {activityLog.slice(0, 5).map((act) => (
-                  <div
-                    key={act.id}
-                    className="p-2.5 rounded-xl bg-[#080e1d] border border-[#1c315e]/50 text-xs text-slate-300 flex flex-col gap-0.5"
-                  >
-                    <span className="font-semibold text-white text-[11px]">
-                      {act.text}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {act.time}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative rounded-2xl border border-slate-800 bg-slate-900/80 p-2.5 text-slate-200 transition-colors hover:border-cyan-500/20 hover:text-cyan-200"
+              title="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+            </button>
 
-        {/* User Profile Avatar */}
-        <div className="flex items-center gap-2 pl-1.5 border-l border-[#1c315e]/60">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 p-0.5 shadow-md shadow-cyan-950">
-            <div className="w-full h-full bg-[#0d152a] rounded-[10px] flex items-center justify-center text-cyan-300 font-bold text-xs">
-              <User className="w-4 h-4 text-cyan-300" />
-            </div>
+            {showNotifications && (
+              <div className="absolute right-0 top-full z-50 mt-3 w-80 rounded-3xl border border-slate-800 bg-slate-950/95 p-4 shadow-2xl shadow-slate-950/40">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div className="flex items-center gap-2 text-sm font-bold text-white">
+                    <Bell className="h-4 w-4 text-cyan-300" />
+                    Live updates
+                  </div>
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400">{activityLog.length}</span>
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  {activityLog.slice(0, 5).map((act) => (
+                    <div key={act.id} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-2.5 text-xs text-slate-300">
+                      <div className="font-semibold text-white">{act.text}</div>
+                      <div className="mt-1 font-mono text-[10px] text-slate-400">{act.time}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="hidden lg:flex flex-col">
-            <span className="text-xs font-bold text-white leading-tight">
-              Cmdr. A. Sharma
-            </span>
-            <span className="text-[10px] font-medium text-cyan-400 leading-tight">
-              Incident Commander
-            </span>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/80 px-2.5 py-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/20">
+              <User className="h-4 w-4" />
+            </div>
+            <div className="hidden text-left lg:block">
+              <div className="text-xs font-bold text-white">Cmdr. A. Sharma</div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-300">Incident command</div>
+            </div>
           </div>
         </div>
       </div>
