@@ -210,96 +210,203 @@ export const DisasterProvider = ({ children }) => {
     addToast('Resource Deployed', `${resource.name} is now assigned to ${incident.title}.`, 'success');
   };
 
-  // Simulate an incoming live emergency report to wow judges during live presentations
-  const simulateIncomingEmergency = (customReportText) => {
+   // Send an emergency report to the real FastAPI + ML pipeline
+  const simulateIncomingEmergency = async (customReportText) => {
     soundFX.playEmergencyAlert();
     setIsSimulatingAi(true);
 
-    const reportId = `REP-${String(reports.length + 1).padStart(3, '0')}`;
-    const rawText = customReportText || 'URGENT: Flash mudslide reported near West Gorge Road. 6 trekkers cut off without shelter. Water rising fast!';
-    
-    const newReport = {
-      id: reportId,
-      rawText: rawText,
-      source: 'Citizen SOS Network (Live Feed)',
-      sender: '+91 94111 ' + Math.floor(10000 + Math.random() * 90000),
-      timestamp: 'Just now',
-      status: 'AI PROCESSED',
-      confidence: 98.4,
-      extracted: {
-        location: 'West Gorge Ridge (Sector 9)',
-        peopleAffected: 6,
-        disaster: 'Flash Mudslide & Isolation',
-        priority: 'P1 Critical',
-        medicalHelp: 'Required (Cold Exposure)',
-        resourcesNeeded: 'Rescue Team 6 (Helo-Drop) + Trauma Blankets',
-        keyEntities: ['West Gorge', '6 trekkers cut off', 'Water rising', 'Mudslide']
+ const demoReports = [
+  'Heavy rainfall has caused severe flooding in the village. Around 40 people are trapped inside their houses. Flood water has entered several homes and one person is seriously injured and needs immediate medical help.',
+
+  'A major landslide has blocked the mountain road near the village. Several houses are damaged and around 18 people are trapped. Rescue teams with heavy equipment are urgently needed.',
+
+  'A strong earthquake has struck the area. Several buildings have collapsed and around 30 people may be trapped under the debris. Multiple people are injured and require immediate medical assistance.',
+
+  'Extreme rainfall has caused a sudden cloudburst near the village. Roads are flooded and around 12 people are stranded on rooftops. Emergency rescue teams are required immediately.'
+];
+
+const demoIndex = incidents.length % demoReports.length;
+
+const rawText =
+  customReportText || demoReports[demoIndex];
+    try {
+      // Your FastAPI backend
+     const response = await fetch('https://resqai-backend-029v.onrender.com/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          text: rawText,
+          latitude: 26.1445,
+          longitude: 91.7362
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.detail || `Backend error: ${response.status}`
+        );
       }
-    };
 
-    setTimeout(() => {
-      soundFX.playAiChime();
-      setReports(prev => [newReport, ...prev]);
-      setSelectedReportId(reportId);
+      const data = await response.json();
 
-      // Create new incident
+      console.log('REAL AI ANALYSIS:', data);
+
+      const reportId = `REP-${String(reports.length + 1).padStart(3, '0')}`;
       const newIncId = `INC-${100 + incidents.length + 1}`;
+
+      // Create report using REAL ML output
+      const newReport = {
+        id: reportId,
+        rawText: rawText,
+        source: 'Citizen SOS Network (Live Feed)',
+        sender: 'Emergency Report',
+        timestamp: 'Just now',
+        status: 'AI PROCESSED',
+        confidence: 100,
+
+        extracted: {
+          location: `${data.incident.latitude}, ${data.incident.longitude}`,
+          peopleAffected: data.ai_analysis.people_affected,
+          disaster: data.ai_analysis.disaster_type,
+          priority: data.priority.level,
+          medicalHelp: data.ai_analysis.medical_required
+            ? 'Required'
+            : 'Not Required',
+          resourcesNeeded: data.resources.join(', '),
+          keyEntities: [
+            data.ai_analysis.disaster_type,
+            `${data.ai_analysis.people_affected} people affected`,
+            data.ai_analysis.people_trapped ? 'People trapped' : 'No people trapped',
+            data.ai_analysis.medical_required ? 'Medical help required' : 'No medical help required'
+          ]
+        }
+      };
+
+      // Create incident using REAL ML output
       const newIncident = {
         id: newIncId,
-        title: 'West Gorge Mudslide & Trekker Isolation',
-        disaster: 'Landslide',
-        location: 'West Gorge Ridge (Sector 9)',
-        coordinates: [28.7600, 77.1500],
-        peopleAffected: 6,
-        injured: 1,
-        priority: 'P1 Critical',
-        severity: 'Critical',
+        title: `${data.ai_analysis.disaster_type.toUpperCase()} Emergency`,
+        disaster: data.ai_analysis.disaster_type,
+        location: `${data.incident.latitude.toFixed(4)}, ${data.incident.longitude.toFixed(4)}`,
+        coordinates: [
+          data.incident.latitude,
+          data.incident.longitude
+        ],
+
+        peopleAffected: data.ai_analysis.people_affected,
+        injured: data.ai_analysis.medical_required ? 1 : 0,
+
+        priority: data.priority.level,
+        severity:
+          data.ai_analysis.severity.charAt(0).toUpperCase() +
+          data.ai_analysis.severity.slice(1),
+
         status: 'Active',
         reportedAt: 'Just now',
-        medicalHelp: 'Required',
+
+        medicalHelp: data.ai_analysis.medical_required
+          ? 'Required'
+          : 'Not Required',
+
         description: rawText,
-        recommendedTeamId: 'TEAM-06',
-        recommendedTeamName: 'Rescue Team 6 (Air Recon & Heli-Drop)',
-        etaMinutes: 10,
-        distanceKm: 5.2,
-        requiredEquipment: ['ALH Winch Chopper', 'Thermal Imaging', 'Airdrop Survival Packs'],
+
+        recommendedTeamId:
+          data.rescue_assignment?.team_id || null,
+
+        recommendedTeamName:
+          data.rescue_assignment?.team_id
+            ? `AI Recommended ${data.rescue_assignment.team_id}`
+            : 'No team recommended',
+
+        etaMinutes: null,
+
+        distanceKm:
+          data.rescue_assignment?.distance_km ?? null,
+
+        requiredEquipment: data.resources,
+
         aiRationale: [
-          'High elevation & washed-out road prevents ground vehicles',
-          'Fastest aerial response (10 min flight time)',
-          'Equipped with heavy-weather rescue hoist'
+          `AI classified disaster as ${data.ai_analysis.disaster_type}`,
+          `AI classified severity as ${data.ai_analysis.severity}`,
+          `Priority score: ${data.priority.score}`,
+          `Required resources: ${data.resources.join(', ')}`,
+          data.rescue_assignment
+            ? `Best rescue team: ${data.rescue_assignment.team_id}`
+            : 'No rescue team available'
         ],
+
         assignedTeam: null,
+
         timeline: [
-          { time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), text: 'SOS Distress signal picked up by radio telemetry' },
-          { time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), text: 'AI parsed incident entities & flagged P1 Critical' }
+          {
+            time: new Date().toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            text: 'Emergency report received by ResQAI'
+          },
+          {
+            time: new Date().toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            text: `AI classified ${data.ai_analysis.disaster_type} / ${data.ai_analysis.severity}`
+          },
+          {
+            time: new Date().toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            text: `Priority calculated as ${data.priority.level} with score ${data.priority.score}`
+          }
         ]
       };
+
+      // Update frontend state
+      setReports(prev => [newReport, ...prev]);
+      setSelectedReportId(reportId);
 
       setIncidents(prev => [newIncident, ...prev]);
       setSelectedIncidentId(newIncId);
 
+      // Activity feed
       setActivityLog(prev => [
         {
           id: 'ACT-' + Date.now(),
           type: 'report',
           icon: 'AlertCircle',
-          text: `🚨 Live Emergency: 6 trekkers trapped at West Gorge Ridge`,
+          text: `🚨 AI Emergency: ${data.ai_analysis.disaster_type.toUpperCase()} — ${data.priority.level}`,
           time: 'Just now',
           badgeColor: 'text-red-400 bg-red-500/10 border-red-500/30'
         },
         ...prev
       ]);
 
-      setIsSimulatingAi(false);
+      soundFX.playAiChime();
 
       addToast(
-        '🚨 New Emergency Identified',
-        'AI classified incoming report as P1 Critical. Incident mapped & Rescue Team 6 recommended.',
+        '🚨 AI Emergency Identified',
+        `${data.ai_analysis.disaster_type.toUpperCase()} classified as ${data.priority.level}. ${data.rescue_assignment?.team_id || 'No team'} recommended.`,
         'critical'
       );
-    }, 1200);
-  };
 
+      console.log('AI PIPELINE RESULT:', data);
+
+    } catch (error) {
+      console.error('AI backend error:', error);
+
+      addToast(
+        '❌ AI Analysis Failed',
+        error.message || 'Could not connect to the FastAPI backend.',
+        'critical'
+      );
+    } finally {
+      setIsSimulatingAi(false);
+    }
+  };
   // Add Incident directly from AI Vision page
   const addIncidentFromVision = (visionData) => {
     soundFX.playAiChime();
