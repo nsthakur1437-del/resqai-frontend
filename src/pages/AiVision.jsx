@@ -51,7 +51,7 @@ export const AiVision = () => {
   const imageElementRef = useRef(null);
   const canvasOverlayRef = useRef(null);
 
-  const BACKEND_API = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+  const BACKEND_API = (import.meta.env.VITE_API_BASE_URL || 'https://resqai-backend-029v.onrender.com').replace(/\/$/, '');
 
   // -------------------------------------------------------------
   // Backend Connection Check (/health)
